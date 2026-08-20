@@ -1,1 +1,194 @@
-var t=this&&this.__awaiter||function(t,e,r,n){return new(r||(r=Promise))(function(i,a){function s(t){try{c(n.next(t))}catch(t){a(t)}}function o(t){try{c(n.throw(t))}catch(t){a(t)}}function c(t){var e;t.done?i(t.value):(e=t.value,e instanceof r?e:new r(function(t){t(e)})).then(s,o)}c((n=n.apply(t,e||[])).next())})},e=this&&this.__generator||function(t,e){var r,n,i,a={label:0,sent:function(){if(1&i[0])throw i[1];return i[1]},trys:[],ops:[]},s=Object.create(("function"==typeof Iterator?Iterator:Object).prototype);return s.next=o(0),s.throw=o(1),s.return=o(2),"function"==typeof Symbol&&(s[Symbol.iterator]=function(){return this}),s;function o(o){return function(c){return function(o){if(r)throw new TypeError("Generator is already executing.");for(;s&&(s=0,o[0]&&(a=0)),a;)try{if(r=1,n&&(i=2&o[0]?n.return:o[0]?n.throw||((i=n.return)&&i.call(n),0):n.next)&&!(i=i.call(n,o[1])).done)return i;switch(n=0,i&&(o=[2&o[0],i.value]),o[0]){case 0:case 1:i=o;break;case 4:return a.label++,{value:o[1],done:!1};case 5:a.label++,n=o[1],o=[0];continue;case 7:o=a.ops.pop(),a.trys.pop();continue;default:if(!(i=a.trys,(i=i.length>0&&i[i.length-1])||6!==o[0]&&2!==o[0])){a=0;continue}if(3===o[0]&&(!i||o[1]>i[0]&&o[1]<i[3])){a.label=o[1];break}if(6===o[0]&&a.label<i[1]){a.label=i[1],i=o;break}if(i&&a.label<i[2]){a.label=i[2],a.ops.push(o);break}i[2]&&a.ops.pop(),a.trys.pop();continue}o=e.call(t,a)}catch(t){o=[6,t],n=0}finally{r=i=0}if(5&o[0])throw o[1];return{value:o[0]?o[1]:void 0,done:!0}}([o,c])}}};Object.defineProperty(exports,"__esModule",{value:!0});var r=require("cheerio"),n=require("@libs/fetch"),i=require("@libs/novelStatus"),a=function(){function a(){this.id="sangtacviet",this.name="Sáng Tác Việt",this.icon="src/vi/sangtacviet/icon.png",this.site="https://sangtacviet.app",this.version="2.0.0",this.filters={}}return a.prototype.parseNovels=function(t){var e=this,r=[];return t('a[href*="/truyen/"]').each(function(n,i){var a=t(i).attr("href"),s=t(i).find(".searchbooktitle, b").text().trim(),o=t(i).find("img").attr("src");a&&s&&!r.some(function(t){return t.path===a})&&r.push({name:s,cover:(null==o?void 0:o.startsWith("http"))?o:e.site+o,path:a.replace(e.site,"")})}),r},a.prototype.parseChapters=function(t){var e=this,r=[];return t('a[href*="/truyen/"]').each(function(n,i){var a=t(i).attr("href")||"",s=t(i).text().trim();a.split("/").length>4&&s&&r.push({name:s,path:a.replace(e.site,"")})}),r},a.prototype.popularNovels=function(i,a){return t(this,arguments,void 0,function(t,i){var a,s,o;i.filters;return e(this,function(e){switch(e.label){case 0:return a="".concat(this.site,"/index.php?ngmar=all&p=").concat(t),[4,(0,n.fetchApi)(a)];case 1:return[4,e.sent().text()];case 2:return s=e.sent(),o=(0,r.load)(s),[2,this.parseNovels(o)]}})})},a.prototype.parseNovel=function(a){return t(this,void 0,void 0,function(){var t,s,o,c,u;return e(this,function(e){switch(e.label){case 0:return t=this.site+a,[4,(0,n.fetchApi)(t)];case 1:return[4,e.sent().text()];case 2:return s=e.sent(),o=(0,r.load)(s),c={path:a,name:o("h1").text().trim()||"Truyện Sáng Tác",chapters:[],totalPages:1},u=o(".bookinfo img, img.cover").attr("src"),c.cover=(null==u?void 0:u.startsWith("http"))?u:this.site+u,c.status=i.NovelStatus.Ongoing,c.chapters=this.parseChapters(o),[2,c]}})})},a.prototype.parsePage=function(i,a){return t(this,void 0,void 0,function(){var t,a,s;return e(this,function(e){switch(e.label){case 0:return t="".concat(this.site).concat(i),[4,(0,n.fetchApi)(t)];case 1:return[4,e.sent().text()];case 2:return a=e.sent(),s=(0,r.load)(a),[2,{chapters:this.parseChapters(s)}]}})})},a.prototype.parseChapter=function(i){return t(this,void 0,void 0,function(){var t,a;return e(this,function(e){switch(e.label){case 0:return[4,(0,n.fetchApi)(this.site+i)];case 1:return[4,e.sent().text()];case 2:return t=e.sent(),(a=(0,r.load)(t))("script, style, iframe, .ads").remove(),[2,a(".contentbox").html()||a("#chapter-content").html()||""]}})})},a.prototype.searchNovels=function(i,a){return t(this,void 0,void 0,function(){var t,a,s;return e(this,function(e){switch(e.label){case 0:return t="".concat(this.site,"/index.php?ngmar=search&s=").concat(encodeURIComponent(i)),[4,(0,n.fetchApi)(t)];case 1:return[4,e.sent().text()];case 2:return a=e.sent(),s=(0,r.load)(a),[2,this.parseNovels(s)]}})})},a}();exports.default=new a;
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var cheerio_1 = require("cheerio");
+var fetch_1 = require("@libs/fetch");
+var novelStatus_1 = require("@libs/novelStatus");
+var SangTacViet = /** @class */ (function () {
+    function SangTacViet() {
+        this.id = 'sangtacviet';
+        this.name = 'Sáng Tác Việt';
+        this.icon = 'src/vi/sangtacviet/icon.png';
+        this.site = 'https://sangtacviet.app';
+        this.version = '2.0.0';
+        this.filters = {};
+    }
+    SangTacViet.prototype.parseNovels = function (loadedCheerio) {
+        var _this = this;
+        var novels = [];
+        loadedCheerio('a[href*="/truyen/"]').each(function (idx, ele) {
+            var href = loadedCheerio(ele).attr('href');
+            var novelName = loadedCheerio(ele).find('.searchbooktitle, b').text().trim();
+            var cover = loadedCheerio(ele).find('img').attr('src');
+            if (href && novelName && !novels.some(function (n) { return n.path === href; })) {
+                novels.push({
+                    name: novelName,
+                    cover: (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : _this.site + cover,
+                    path: href.replace(_this.site, ''),
+                });
+            }
+        });
+        return novels;
+    };
+    SangTacViet.prototype.parseChapters = function (loadedCheerio) {
+        var _this = this;
+        var chapters = [];
+        loadedCheerio('a[href*="/truyen/"]').each(function (idx, ele) {
+            var href = loadedCheerio(ele).attr('href') || '';
+            var text = loadedCheerio(ele).text().trim();
+            if (href.split('/').length > 4 && text) {
+                chapters.push({
+                    name: text,
+                    path: href.replace(_this.site, ''),
+                });
+            }
+        });
+        return chapters;
+    };
+    SangTacViet.prototype.popularNovels = function (pageNo_1, _a) {
+        return __awaiter(this, arguments, void 0, function (pageNo, _b) {
+            var url, result, body, loadedCheerio;
+            var filters = _b.filters;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        url = "".concat(this.site, "/index.php?ngmar=all&p=").concat(pageNo);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _c.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _c.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                }
+            });
+        });
+    };
+    SangTacViet.prototype.parseNovel = function (novelPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, result, body, loadedCheerio, novel, cover;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = this.site + novelPath;
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        novel = {
+                            path: novelPath,
+                            name: loadedCheerio('h1').text().trim() || 'Truyện Sáng Tác',
+                            chapters: [],
+                            totalPages: 1,
+                        };
+                        cover = loadedCheerio('.bookinfo img, img.cover').attr('src');
+                        novel.cover = (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : this.site + cover;
+                        novel.status = novelStatus_1.NovelStatus.Ongoing;
+                        novel.chapters = this.parseChapters(loadedCheerio);
+                        return [2 /*return*/, novel];
+                }
+            });
+        });
+    };
+    SangTacViet.prototype.parsePage = function (novelPath, page) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, result, body, loadedCheerio;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = "".concat(this.site).concat(novelPath);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, {
+                                chapters: this.parseChapters(loadedCheerio),
+                            }];
+                }
+            });
+        });
+    };
+    SangTacViet.prototype.parseChapter = function (chapterPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, body, loadedCheerio, chapterText;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        loadedCheerio('script, style, iframe, .ads').remove();
+                        chapterText = (loadedCheerio('.contentbox').html() ||
+                            loadedCheerio('#chapter-content').html() || '');
+                        return [2 /*return*/, chapterText];
+                }
+            });
+        });
+    };
+    SangTacViet.prototype.searchNovels = function (searchTerm, pageNo) {
+        return __awaiter(this, void 0, void 0, function () {
+            var searchUrl, result, body, loadedCheerio;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        searchUrl = "".concat(this.site, "/index.php?ngmar=search&s=").concat(encodeURIComponent(searchTerm));
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                }
+            });
+        });
+    };
+    return SangTacViet;
+}());
+exports.default = new SangTacViet();

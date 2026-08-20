@@ -1,1 +1,204 @@
-var t=this&&this.__awaiter||function(t,e,n,r){return new(n||(n=Promise))(function(i,o){function a(t){try{s(r.next(t))}catch(t){o(t)}}function u(t){try{s(r.throw(t))}catch(t){o(t)}}function s(t){var e;t.done?i(t.value):(e=t.value,e instanceof n?e:new n(function(t){t(e)})).then(a,u)}s((r=r.apply(t,e||[])).next())})},e=this&&this.__generator||function(t,e){var n,r,i,o={label:0,sent:function(){if(1&i[0])throw i[1];return i[1]},trys:[],ops:[]},a=Object.create(("function"==typeof Iterator?Iterator:Object).prototype);return a.next=u(0),a.throw=u(1),a.return=u(2),"function"==typeof Symbol&&(a[Symbol.iterator]=function(){return this}),a;function u(u){return function(s){return function(u){if(n)throw new TypeError("Generator is already executing.");for(;a&&(a=0,u[0]&&(o=0)),o;)try{if(n=1,r&&(i=2&u[0]?r.return:u[0]?r.throw||((i=r.return)&&i.call(r),0):r.next)&&!(i=i.call(r,u[1])).done)return i;switch(r=0,i&&(u=[2&u[0],i.value]),u[0]){case 0:case 1:i=u;break;case 4:return o.label++,{value:u[1],done:!1};case 5:o.label++,r=u[1],u=[0];continue;case 7:u=o.ops.pop(),o.trys.pop();continue;default:if(!(i=o.trys,(i=i.length>0&&i[i.length-1])||6!==u[0]&&2!==u[0])){o=0;continue}if(3===u[0]&&(!i||u[1]>i[0]&&u[1]<i[3])){o.label=u[1];break}if(6===u[0]&&o.label<i[1]){o.label=i[1],i=u;break}if(i&&o.label<i[2]){o.label=i[2],o.ops.push(u);break}i[2]&&o.ops.pop(),o.trys.pop();continue}u=e.call(t,o)}catch(t){u=[6,t],r=0}finally{n=i=0}if(5&u[0])throw u[1];return{value:u[0]?u[1]:void 0,done:!0}}([u,s])}}};Object.defineProperty(exports,"__esModule",{value:!0});var n=require("@libs/fetch"),r=require("@libs/novelStatus"),i=require("cheerio"),o=function(){function o(){this.id="nettruyen",this.name="Nettruyen",this.icon="src/vi/nettruyen/icon.png",this.site="https://nettruyen.com.vn",this.version="1.0.0"}return o.prototype.parseNovels=function(t){var e=this,n=[];return t("#listchuong > ul > li > a.thumb").each(function(r,i){var o=i.attribs.href;if(o){var a=i.attribs.title,u=e.site+"/"+t(i).find("img").first().attr("src");n.push({path:"/"+o,name:a,cover:u})}}),n},o.prototype.popularNovels=function(r){return t(this,void 0,void 0,function(){var t,o;return e(this,function(e){switch(e.label){case 0:return t="".concat(this.site,"/xem-nhieu/trang-").concat(r,".html"),[4,(0,n.fetchApi)(t).then(function(t){return t.text()})];case 1:return o=e.sent(),[2,this.parseNovels((0,i.load)(o))]}})})},o.prototype.parseChapters=function(t){var e=[];return t("ul.list-unstyled > li > a").each(function(t,n){var r,i=n.attribs.href;if(i){var o=n.attribs.title;e.push({path:"/"+i,name:o,chapterNumber:Number(null===(r=o.match(/Chương (\d+)/))||void 0===r?void 0:r[1])})}}),e},o.prototype.parseNovel=function(o){return t(this,void 0,void 0,function(){var t,a,u,s;return e(this,function(e){switch(e.label){case 0:return t=this.site+o,[4,(0,n.fetchApi)(t).then(function(t){return t.text()})];case 1:return a=e.sent(),u=(0,i.load)(a),(s={path:o,name:u(".gioithieutruyen.profile-info > h1").text().trim(),chapters:[],totalPages:Number(u(".phantrang > span:nth-child(2)").text())||1}).cover=this.site+"/"+u(".img-thumb > img").attr("src"),u(".thongtintruyen.note.note-info").each(function(t,e){switch(u(e).find("strong").text().trim()){case"Tác giả":s.author=u(e).text().replace(/Tác giả\s+\n?:/,"");break;case"Trạng thái":var n=u(e).text();n.includes("Đang ra")?s.status=r.NovelStatus.Ongoing:n.includes("Hoàn thành")?s.status=r.NovelStatus.Completed:s.status=r.NovelStatus.Unknown;break;case"Thể loại":s.genres=u("a > span").toArray().map(function(t){return u(t).text()}).join(",")}}),s.summary=u(".gioithieutruyen > .gioithieutruyen").text().trim(),s.chapters=this.parseChapters(u),[2,s]}})})},o.prototype.parsePage=function(r,o){return t(this,void 0,void 0,function(){var t,a,u,s;return e(this,function(e){switch(e.label){case 0:if(!(t=null===(s=r.match(/-(\d+)\//))||void 0===s?void 0:s[1]))throw new Error("Cant parse page");return a="".concat(this.site,"/ajax.chuong.php?id=").concat(t,"&page=").concat(o,"&url=").concat(r.replace(/\//g,""),"&loai=truyendich"),[4,(0,n.fetchApi)(a).then(function(t){return t.text()})];case 1:return u=e.sent(),[2,{chapters:this.parseChapters((0,i.load)(u))}]}})})},o.prototype.parseChapter=function(r){return t(this,void 0,void 0,function(){var t,o;return e(this,function(e){switch(e.label){case 0:return t=this.site+r,[4,(0,n.fetchApi)(t).then(function(t){return t.text()})];case 1:return o=e.sent(),[2,(0,i.load)(o)("#noidungchap").html()||""]}})})},o.prototype.searchNovels=function(){return t(this,void 0,void 0,function(){return e(this,function(t){throw new Error("Method not implemented.")})})},o}();exports.default=new o;
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var cheerio_1 = require("cheerio");
+var fetch_1 = require("@libs/fetch");
+var novelStatus_1 = require("@libs/novelStatus");
+var NetTruyen = /** @class */ (function () {
+    function NetTruyen() {
+        this.id = 'nettruyen';
+        this.name = 'NetTruyen';
+        this.icon = 'src/vi/nettruyen/icon.png';
+        this.site = 'https://nettruyenww.com';
+        this.version = '2.1.0';
+        this.filters = {};
+    }
+    NetTruyen.prototype.parseNovels = function (loadedCheerio) {
+        var _this = this;
+        var novels = [];
+        loadedCheerio('.item, .row .item').each(function (idx, ele) {
+            var a = loadedCheerio(ele).find('h3 a, .title a, a.jtip');
+            var href = a.attr('href');
+            var name = a.text().trim();
+            var cover = loadedCheerio(ele).find('.image img, img').attr('data-original') ||
+                loadedCheerio(ele).find('.image img, img').attr('src');
+            if (href && name && !novels.some(function (n) { return n.path === href.replace(_this.site, ''); })) {
+                novels.push({
+                    name: name,
+                    cover: (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : (cover ? _this.site + cover : undefined),
+                    path: href.replace(_this.site, ''),
+                });
+            }
+        });
+        return novels;
+    };
+    NetTruyen.prototype.parseChapters = function (loadedCheerio) {
+        var _this = this;
+        var chapters = [];
+        loadedCheerio('.list-chapter .chapter a, #nt_listchapter .chapter a').each(function (idx, ele) {
+            var href = loadedCheerio(ele).attr('href') || '';
+            var name = loadedCheerio(ele).text().trim();
+            if (href && name) {
+                chapters.push({
+                    name: name,
+                    path: href.replace(_this.site, ''),
+                });
+            }
+        });
+        return chapters;
+    };
+    NetTruyen.prototype.popularNovels = function (pageNo_1, _a) {
+        return __awaiter(this, arguments, void 0, function (pageNo, _b) {
+            var url, result, body, loadedCheerio;
+            var filters = _b.filters;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        url = "".concat(this.site, "/?page=").concat(pageNo);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _c.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _c.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                }
+            });
+        });
+    };
+    NetTruyen.prototype.parseNovel = function (novelPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, result, body, loadedCheerio, novel, cover;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = this.site + novelPath;
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        novel = {
+                            path: novelPath,
+                            name: loadedCheerio('.title-detail, h1.title-detail').text().trim() || 'Truyện Tranh',
+                            chapters: [],
+                            totalPages: 1,
+                        };
+                        cover = loadedCheerio('.col-image img').attr('src') || loadedCheerio('.col-image img').attr('data-original');
+                        novel.cover = (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : (cover ? this.site + cover : undefined);
+                        novel.summary = loadedCheerio('.detail-content p, .shortened').text().trim();
+                        novel.author = loadedCheerio('.author .col-xs-8').text().trim();
+                        novel.status = novelStatus_1.NovelStatus.Ongoing;
+                        novel.chapters = this.parseChapters(loadedCheerio);
+                        return [2 /*return*/, novel];
+                }
+            });
+        });
+    };
+    NetTruyen.prototype.parsePage = function (novelPath, page) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, result, body, loadedCheerio;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = "".concat(this.site).concat(novelPath);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, {
+                                chapters: this.parseChapters(loadedCheerio),
+                            }];
+                }
+            });
+        });
+    };
+    NetTruyen.prototype.parseChapter = function (chapterPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, body, loadedCheerio, images;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        images = [];
+                        loadedCheerio('.reading-detail .page-chapter img, .reading-detail img').each(function (idx, ele) {
+                            var src = loadedCheerio(ele).attr('data-original') || loadedCheerio(ele).attr('src');
+                            if (src) {
+                                var fullSrc = src.startsWith('http') ? src : (src.startsWith('//') ? 'https:' + src : _this.site + src);
+                                images.push("<img src=\"".concat(fullSrc, "\" style=\"width:100%;margin-bottom:8px;\"/>"));
+                            }
+                        });
+                        return [2 /*return*/, images.join('\n')];
+                }
+            });
+        });
+    };
+    NetTruyen.prototype.searchNovels = function (searchTerm, pageNo) {
+        return __awaiter(this, void 0, void 0, function () {
+            var searchUrl, result, body, loadedCheerio;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        searchUrl = "".concat(this.site, "/tim-truyen?keyword=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                }
+            });
+        });
+    };
+    return NetTruyen;
+}());
+exports.default = new NetTruyen();

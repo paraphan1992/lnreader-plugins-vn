@@ -1,1 +1,536 @@
-Object.defineProperty(exports,"__esModule",{value:!0});var e,t=require("@libs/fetch"),n=require("htmlparser2"),a=require("cheerio"),i=require("@libs/novelStatus"),o=require("@libs/filterInputs");!function(e){e.Unknown="Unknown",e.GetName="GetName",e.GetSummary="GetSummary",e.GetInfos="GetInfos",e.GetGenres="GetGenres",e.GetCover="GetCover",e.GetVolumes="GetVolumes"}(e||(e={}));var l=function(){function l(){this.id="ln.hako",this.name="Hako",this.icon="src/vi/hakolightnovel/icon.png",this.site="https://ln.hako.vn",this.version="1.1.1",this.imageRequestInit={headers:{Referer:this.site}},this.filters={alphabet:{type:o.FilterTypes.Picker,value:"",label:"Chữ cái",options:[{label:"Tất cả",value:""},{label:"Khác",value:"khac"},{label:"A",value:"a"},{label:"B",value:"b"},{label:"C",value:"c"},{label:"D",value:"d"},{label:"E",value:"e"},{label:"F",value:"f"},{label:"G",value:"g"},{label:"H",value:"h"},{label:"I",value:"i"},{label:"J",value:"j"},{label:"K",value:"k"},{label:"L",value:"l"},{label:"M",value:"m"},{label:"N",value:"n"},{label:"O",value:"o"},{label:"P",value:"p"},{label:"Q",value:"q"},{label:"R",value:"r"},{label:"S",value:"s"},{label:"T",value:"t"},{label:"U",value:"u"},{label:"V",value:"v"},{label:"W",value:"w"},{label:"X",value:"x"},{label:"Y",value:"y"},{label:"Z",value:"z"}]},type:{type:o.FilterTypes.CheckboxGroup,label:"Phân loại",value:[],options:[{label:"Truyện dịch",value:"truyendich"},{label:"Truyện sáng tác",value:"sangtac"},{label:"Convert",value:"convert"}]},status:{type:o.FilterTypes.CheckboxGroup,label:"Tình trạng",value:[],options:[{label:"Đang tiến hành",value:"dangtienhanh"},{label:"Tạm ngưng",value:"tamngung"},{label:"Đã hoàn thành",value:"hoanthanh"}]},sort:{type:o.FilterTypes.Picker,label:"Sắp xếp",value:"top",options:[{label:"A-Z",value:"tentruyen"},{label:"Z-A",value:"tentruyenza"},{label:"Mới cập nhật",value:"capnhat"},{label:"Truyện mới",value:"truyenmoi"},{label:"Theo dõi",value:"theodoi"},{label:"Top toàn thời gian",value:"top"},{label:"Top tháng",value:"topthang"},{label:"Số từ",value:"sotu"}]}}}return l.prototype.parseNovels=function(e){return(0,t.fetchApi)(e).then(function(e){return e.text()}).then(function(e){var t=[],a={},i=!1,o=!1,l=new n.Parser({onopentag:function(e,n){var l,s,r;(null===(l=n.class)||void 0===l?void 0:l.includes("thumb-item-flow"))&&(o=!0),o&&((null===(s=n.class)||void 0===s?void 0:s.includes("series-title"))&&(i=!0),(null===(r=n.class)||void 0===r?void 0:r.includes("img-in-ratio"))&&(a.cover=n["data-bg"]),i&&"a"===e&&(a.name=n.title,a.path=n.href,t.push(a),a={},i=!1,o=!1))}});return l.write(e),l.end(),t})},l.prototype.popularNovels=function(e,t){var n=t.filters,a=this.site+"/danh-sach";if(n){n.alphabet.value&&(a+="/"+n.alphabet.value);for(var i=new URLSearchParams,o=0,l=n.type.value;o<l.length;o++){var s=l[o];i.append(s,"1")}for(var r=0,u=n.status.value;r<u.length;r++){var c=u[r];i.append(c,"1")}i.append("sapxep",n.sort.value),a+="?"+i.toString()+"&page="+e}else a+="?page="+e;return this.parseNovels(a)},l.prototype.parseNovel=function(a){var o,l={path:a,name:"",author:"",artist:"",summary:"",genres:"",status:""},s=[],r={isDone:!1,isStarted:!1,onopentag:function(e){"a"===e&&(this.isStarted=!0)},ontext:function(e){l.name+=e},onclosetag:function(){this.isStarted&&(this.isDone=!0)}},u={newLine:!1,ontext:function(e){this.newLine?(this.newLine=!1,l.summary+="\n"+e):l.summary+=e},onclosetag:function(){this.newLine=!0}},c={ontext:function(e){l.genres+=e}};!function(e){e[e.Author=0]="Author",e[e.Artist=1]="Artist",e[e.Status=2]="Status",e[e.Unknown=3]="Unknown"}(o||(o={}));var h={isStarted:!1,info:o.Unknown,onopentag:function(e,t){if("info-item"===t.class)switch(this.info){case o.Unknown:l.author||(this.info=o.Author);break;case o.Author:this.info=o.Artist;break;case o.Artist:this.info=o.Status;break;case o.Status:this.info=o.Unknown}"a"===e&&(this.isStarted=!0)},ontext:function(e){if(this.isStarted)switch(this.info){case o.Author:l.author+=e;break;case o.Artist:l.artist+=e;break;case o.Status:l.status+=e}},onclosetag:function(e){this.isStarted&&(this.isStarted=!1),"a"===e&&this.info===o.Status&&(this.isDone=!0)}},v={currentVolume:"",num:0,part:1,isStarted:!1,readingTime:!1,tempChapter:{},onopentag:function(e,t){var n,a;if(this.isStarted)if("a"===e&&null!==t.title){var i=t.title,o=Number(null===(n=i.match(/Chương\s*(\d+)/i))||void 0===n?void 0:n[1]);o?this.num===o?(o=this.num+this.part/10,this.part+=1):(this.num=o,this.part=1):(o=this.num+this.part/10,this.part++),this.tempChapter={path:null===(a=t.href)||void 0===a?void 0:a.replace(/^(https?:\/\/[^/]+)/,""),name:i,page:this.currentVolume,chapterNumber:o}}else"chapter-time"===t.class&&(this.readingTime=!0)},ontext:function(e){if(this.readingTime){var t=e.split("/").map(function(e){return Number(e)});this.tempChapter.releaseTime=new Date(t[2],t[1],t[0]).toISOString(),s.push(this.tempChapter),this.readingTime=!1,this.tempChapter={}}},onclosetag:function(){this.readingTime&&(this.readingTime=!1)}},p={handlers:{Unknown:void 0,GetName:r,GetCover:void 0,GetSummary:u,GetGenres:c,GetInfos:h,GetVolumes:{isStarted:!1,isDone:!1,isParsingChapterList:!1,onopentag:function(e,t){var n;"sect-title"===t.class&&(this.isStarted=!0,v.currentVolume=""),"ul"===e&&(v.isStarted=!0,v.num=0,v.part=1),null===(n=v.onopentag)||void 0===n||n.call(v,e,t)},ontext:function(e){var t;this.isStarted&&(v.currentVolume+=e.trim()),null===(t=v.ontext)||void 0===t||t.call(v,e)},onclosetag:function(e,t){var n;null===(n=v.onclosetag)||void 0===n||n.call(v,e,t),this.isStarted=!1,"ul"===e&&(v.isStarted=!1)}}},action:e.Unknown,onopentag:function(t,n){var a,i;if("series-name"===n.class)this.action=e.GetName;else if(!l.cover&&(null===(a=n.class)||void 0===a?void 0:a.includes("img-in-ratio"))){var o=n.style;o&&(l.cover=o.substring(o.indexOf("http"),o.length-2))}else"summary-content"===n.class?this.action=e.GetSummary:"series-gerne-item"===n.class?this.action=e.GetGenres:"info-item"===n.class?this.action=e.GetInfos:(null===(i=n.class)||void 0===i?void 0:i.includes("volume-list"))&&(this.action=e.GetVolumes)},onclosetag:function(t){var n,a,i;switch(this.action){case e.GetName:(null===(n=this.handlers.GetName)||void 0===n?void 0:n.isDone)&&(this.action=e.Unknown);break;case e.GetSummary:"div"===t&&(this.action=e.Unknown);break;case e.GetGenres:this.action=e.Unknown,l.genres+=",";break;case e.GetInfos:(null===(a=this.handlers.GetInfos)||void 0===a?void 0:a.isDone)&&(this.action=e.Unknown);break;case e.GetVolumes:(null===(i=this.handlers.GetVolumes)||void 0===i?void 0:i.isDone)&&(this.action=e.Unknown)}}};return(0,t.fetchApi)(this.site+a).then(function(e){return e.text()}).then(function(e){var t,a,o,r=new n.Parser({onopentag:function(e,t){var n,a,i;null===(n=p.onopentag)||void 0===n||n.call(p,e,t),p.action&&(null===(i=null===(a=p.handlers[p.action])||void 0===a?void 0:a.onopentag)||void 0===i||i.call(a,e,t))},ontext:function(e){var t,n;p.action&&(null===(n=null===(t=p.handlers[p.action])||void 0===t?void 0:t.ontext)||void 0===n||n.call(t,e))},onclosetag:function(e,t){var n,a,i;p.action&&(null===(a=null===(n=p.handlers[p.action])||void 0===n?void 0:n.onclosetag)||void 0===a||a.call(n,e,t)),null===(i=p.onclosetag)||void 0===i||i.call(p,e,t)}});switch(r.write(e),r.end(),l.chapters=s,null===(t=l.status)||void 0===t?void 0:t.trim()){case"Đang tiến hành":l.status=i.NovelStatus.Ongoing;break;case"Tạm ngưng":l.status=i.NovelStatus.OnHiatus;break;case"Completed":l.status=i.NovelStatus.Completed;break;default:l.status=i.NovelStatus.Unknown}return l.genres=null===(a=l.genres)||void 0===a?void 0:a.replace(/,*\s*$/,""),l.name=l.name.trim(),l.summary=null===(o=l.summary)||void 0===o?void 0:o.trim(),l})},l.prototype.parseChapter=function(e){return(0,t.fetchApi)(this.site+e).then(function(e){return e.text()}).then(function(e){var t=(0,a.load)(e),n=t("#chapter-c-protected");if(n.length){var i=n.attr("data-s")||"none",o=n.attr("data-k")||"",l=[];try{l=JSON.parse(n.attr("data-c")||"[]")}catch(e){}if(Array.isArray(l)&&l.length>0){l.sort(function(e,t){return+e.substring(0,4)-+t.substring(0,4)});var r=l.map(function(e){var t=e.substring(4);return"xor_shuffle"===i?function(e,t){var n=s(e),a=t.length,i=n.map(function(e,n){return e^t.charCodeAt(n%a)});return new TextDecoder("utf-8").decode(i)}(t,o):"base64_reverse"===i?function(e){var t=e.split("").reverse().join("");return new TextDecoder("utf-8").decode(s(t))}(t):function(e){return new TextDecoder("utf-8").decode(s(e))}(t)}).join("");r=r.replace(/\[note(\d+)\]/gi,'<span id="anchor-note$1" class="note-icon none-print inline note-tooltip" data-tooltip-content="#note$1 .note-content" data-note-id="note$1"><i class="fas fa-sticky-note"></i></span><a id="anchor-note$1" class="inline-print none" href="#note$1">[note]</a>'),n.replaceWith(r)}}return t('a[href^="/truyen/"]').has('img[src*="chapter-banners"]').remove(),t("#chapter-content").html()||"Không tìm thấy nội dung"})},l.prototype.searchNovels=function(e,t){var n=this.site+"/tim-kiem?keywords="+e+"&page="+t;return this.parseNovels(n)},l}();function s(e){return Uint8Array.from(atob(e),function(e){return e.charCodeAt(0)})}exports.default=new l;
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var fetch_1 = require("@libs/fetch");
+var htmlparser2_1 = require("htmlparser2");
+var cheerio_1 = require("cheerio");
+var novelStatus_1 = require("@libs/novelStatus");
+var filterInputs_1 = require("@libs/filterInputs");
+var ParseNovelAction;
+(function (ParseNovelAction) {
+    ParseNovelAction["Unknown"] = "Unknown";
+    ParseNovelAction["GetName"] = "GetName";
+    ParseNovelAction["GetSummary"] = "GetSummary";
+    ParseNovelAction["GetInfos"] = "GetInfos";
+    ParseNovelAction["GetGenres"] = "GetGenres";
+    ParseNovelAction["GetCover"] = "GetCover";
+    ParseNovelAction["GetVolumes"] = "GetVolumes";
+})(ParseNovelAction || (ParseNovelAction = {}));
+var HakoPlugin = /** @class */ (function () {
+    function HakoPlugin() {
+        this.id = 'ln.hako';
+        this.name = 'Hako';
+        this.icon = 'src/vi/hakolightnovel/icon.png';
+        this.site = 'https://ln.hako.vn';
+        this.version = '1.1.1';
+        this.imageRequestInit = {
+            headers: {
+                Referer: this.site,
+            },
+        };
+        this.filters = {
+            alphabet: {
+                type: filterInputs_1.FilterTypes.Picker,
+                value: '',
+                label: 'Chữ cái',
+                options: [
+                    { label: 'Tất cả', value: '' },
+                    { label: 'Khác', value: 'khac' },
+                    { label: 'A', value: 'a' },
+                    { label: 'B', value: 'b' },
+                    { label: 'C', value: 'c' },
+                    { label: 'D', value: 'd' },
+                    { label: 'E', value: 'e' },
+                    { label: 'F', value: 'f' },
+                    { label: 'G', value: 'g' },
+                    { label: 'H', value: 'h' },
+                    { label: 'I', value: 'i' },
+                    { label: 'J', value: 'j' },
+                    { label: 'K', value: 'k' },
+                    { label: 'L', value: 'l' },
+                    { label: 'M', value: 'm' },
+                    { label: 'N', value: 'n' },
+                    { label: 'O', value: 'o' },
+                    { label: 'P', value: 'p' },
+                    { label: 'Q', value: 'q' },
+                    { label: 'R', value: 'r' },
+                    { label: 'S', value: 's' },
+                    { label: 'T', value: 't' },
+                    { label: 'U', value: 'u' },
+                    { label: 'V', value: 'v' },
+                    { label: 'W', value: 'w' },
+                    { label: 'X', value: 'x' },
+                    { label: 'Y', value: 'y' },
+                    { label: 'Z', value: 'z' },
+                ],
+            },
+            type: {
+                type: filterInputs_1.FilterTypes.CheckboxGroup,
+                label: 'Phân loại',
+                value: [],
+                options: [
+                    { label: 'Truyện dịch', value: 'truyendich' },
+                    { label: 'Truyện sáng tác', value: 'sangtac' },
+                    { label: 'Convert', value: 'convert' },
+                ],
+            },
+            status: {
+                type: filterInputs_1.FilterTypes.CheckboxGroup,
+                label: 'Tình trạng',
+                value: [],
+                options: [
+                    { label: 'Đang tiến hành', value: 'dangtienhanh' },
+                    { label: 'Tạm ngưng', value: 'tamngung' },
+                    { label: 'Đã hoàn thành', value: 'hoanthanh' },
+                ],
+            },
+            sort: {
+                type: filterInputs_1.FilterTypes.Picker,
+                label: 'Sắp xếp',
+                value: 'top',
+                options: [
+                    { label: 'A-Z', value: 'tentruyen' },
+                    { label: 'Z-A', value: 'tentruyenza' },
+                    { label: 'Mới cập nhật', value: 'capnhat' },
+                    { label: 'Truyện mới', value: 'truyenmoi' },
+                    { label: 'Theo dõi', value: 'theodoi' },
+                    { label: 'Top toàn thời gian', value: 'top' },
+                    { label: 'Top tháng', value: 'topthang' },
+                    { label: 'Số từ', value: 'sotu' },
+                ],
+            },
+        };
+    }
+    HakoPlugin.prototype.parseNovels = function (url) {
+        return (0, fetch_1.fetchApi)(url)
+            .then(function (res) { return res.text(); })
+            .then(function (html) {
+            var novels = [];
+            var tempNovel = {};
+            var isGettingUrl = false;
+            var isParsingNovel = false;
+            var parser = new htmlparser2_1.Parser({
+                onopentag: function (name, attribs) {
+                    var _a, _b, _c;
+                    if ((_a = attribs['class']) === null || _a === void 0 ? void 0 : _a.includes('thumb-item-flow')) {
+                        isParsingNovel = true;
+                    }
+                    if (isParsingNovel) {
+                        if ((_b = attribs['class']) === null || _b === void 0 ? void 0 : _b.includes('series-title')) {
+                            isGettingUrl = true;
+                        }
+                        if ((_c = attribs['class']) === null || _c === void 0 ? void 0 : _c.includes('img-in-ratio')) {
+                            tempNovel.cover = attribs['data-bg'];
+                        }
+                        if (isGettingUrl && name === 'a') {
+                            tempNovel.name = attribs['title'];
+                            tempNovel.path = attribs['href'];
+                            novels.push(tempNovel);
+                            tempNovel = {}; // re-assign new reference
+                            isGettingUrl = false;
+                            isParsingNovel = false;
+                        }
+                    }
+                },
+            });
+            parser.write(html);
+            parser.end();
+            return novels;
+        });
+    };
+    HakoPlugin.prototype.popularNovels = function (pageNo, _a) {
+        var filters = _a.filters;
+        var link = this.site + '/danh-sach';
+        if (filters) {
+            if (filters.alphabet.value) {
+                link += '/' + filters.alphabet.value;
+            }
+            var params = new URLSearchParams();
+            for (var _i = 0, _b = filters.type.value; _i < _b.length; _i++) {
+                var novelType = _b[_i];
+                params.append(novelType, '1');
+            }
+            for (var _c = 0, _d = filters.status.value; _c < _d.length; _c++) {
+                var status_1 = _d[_c];
+                params.append(status_1, '1');
+            }
+            params.append('sapxep', filters.sort.value);
+            link += '?' + params.toString() + '&page=' + pageNo;
+        }
+        else {
+            link += '?page=' + pageNo;
+        }
+        return this.parseNovels(link);
+    };
+    HakoPlugin.prototype.parseNovel = function (novelPath) {
+        var novel = {
+            path: novelPath,
+            name: '',
+            author: '',
+            artist: '',
+            summary: '',
+            genres: '',
+            status: '',
+        };
+        var chapters = [];
+        var getNameHandler = {
+            isDone: false,
+            isStarted: false,
+            onopentag: function (name) {
+                if (name === 'a') {
+                    this.isStarted = true;
+                }
+            },
+            ontext: function (data) {
+                novel.name += data;
+            },
+            onclosetag: function () {
+                if (this.isStarted) {
+                    this.isDone = true;
+                }
+            },
+        };
+        var getSummaryHandler = {
+            newLine: false,
+            ontext: function (data) {
+                if (this.newLine) {
+                    this.newLine = false;
+                    novel.summary += '\n' + data;
+                }
+                else {
+                    novel.summary += data;
+                }
+            },
+            onclosetag: function () {
+                this.newLine = true;
+            },
+        };
+        var getGenresHandler = {
+            ontext: function (data) {
+                novel.genres += data;
+            },
+        };
+        var InfoItem;
+        (function (InfoItem) {
+            InfoItem[InfoItem["Author"] = 0] = "Author";
+            InfoItem[InfoItem["Artist"] = 1] = "Artist";
+            InfoItem[InfoItem["Status"] = 2] = "Status";
+            InfoItem[InfoItem["Unknown"] = 3] = "Unknown";
+        })(InfoItem || (InfoItem = {}));
+        var getInfosHandler = {
+            isStarted: false,
+            info: InfoItem.Unknown,
+            onopentag: function (name, attribs) {
+                if (attribs['class'] === 'info-item') {
+                    switch (this.info) {
+                        case InfoItem.Unknown:
+                            if (!novel.author) {
+                                this.info = InfoItem.Author;
+                            }
+                            break;
+                        case InfoItem.Author:
+                            this.info = InfoItem.Artist;
+                            break;
+                        case InfoItem.Artist:
+                            this.info = InfoItem.Status;
+                            break;
+                        // we dont need the other info (if exist)
+                        case InfoItem.Status:
+                            this.info = InfoItem.Unknown;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                if (name === 'a') {
+                    this.isStarted = true;
+                }
+            },
+            ontext: function (data) {
+                if (this.isStarted) {
+                    switch (this.info) {
+                        case InfoItem.Author:
+                            novel.author += data;
+                            break;
+                        case InfoItem.Artist:
+                            novel.artist += data;
+                            break;
+                        case InfoItem.Status:
+                            novel.status += data;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            },
+            onclosetag: function (name) {
+                if (this.isStarted) {
+                    this.isStarted = false;
+                }
+                if (name === 'a' && this.info === InfoItem.Status) {
+                    this.isDone = true;
+                }
+            },
+        };
+        var getChapterListHandler = {
+            currentVolume: '',
+            num: 0,
+            part: 1,
+            isStarted: false,
+            readingTime: false,
+            tempChapter: {},
+            onopentag: function (name, attribs) {
+                var _a, _b;
+                if (this.isStarted) {
+                    if (name === 'a' && attribs['title'] !== null) {
+                        var chapterName = attribs['title'];
+                        var chapterNumber = Number((_a = chapterName.match(/Chương\s*(\d+)/i)) === null || _a === void 0 ? void 0 : _a[1]);
+                        if (chapterNumber) {
+                            if (this.num === chapterNumber) {
+                                chapterNumber = this.num + this.part / 10;
+                                this.part += 1;
+                            }
+                            else {
+                                this.num = chapterNumber;
+                                this.part = 1;
+                            }
+                        }
+                        else {
+                            chapterNumber = this.num + this.part / 10;
+                            this.part++;
+                        }
+                        this.tempChapter = {
+                            path: (_b = attribs['href']) === null || _b === void 0 ? void 0 : _b.replace(/^(https?:\/\/[^/]+)/, ''),
+                            name: chapterName,
+                            page: this.currentVolume,
+                            chapterNumber: chapterNumber,
+                        };
+                    }
+                    else if (attribs['class'] === 'chapter-time') {
+                        this.readingTime = true;
+                    }
+                }
+            },
+            ontext: function (data) {
+                if (this.readingTime) {
+                    var chapterTime = data.split('/').map(function (x) { return Number(x); });
+                    this.tempChapter.releaseTime = new Date(chapterTime[2], chapterTime[1], chapterTime[0]).toISOString();
+                    chapters.push(this.tempChapter);
+                    this.readingTime = false;
+                    this.tempChapter = {};
+                }
+            },
+            onclosetag: function () {
+                if (this.readingTime)
+                    this.readingTime = false;
+            },
+        };
+        var getVolumesHandler = {
+            isStarted: false,
+            isDone: false,
+            isParsingChapterList: false,
+            onopentag: function (name, attribs) {
+                var _a;
+                if (attribs['class'] === 'sect-title') {
+                    this.isStarted = true;
+                    getChapterListHandler.currentVolume = '';
+                }
+                if (name === 'ul') {
+                    getChapterListHandler.isStarted = true;
+                    getChapterListHandler.num = 0;
+                    getChapterListHandler.part = 1;
+                }
+                (_a = getChapterListHandler.onopentag) === null || _a === void 0 ? void 0 : _a.call(getChapterListHandler, name, attribs);
+            },
+            ontext: function (data) {
+                var _a;
+                if (this.isStarted) {
+                    getChapterListHandler.currentVolume += data.trim();
+                }
+                (_a = getChapterListHandler.ontext) === null || _a === void 0 ? void 0 : _a.call(getChapterListHandler, data);
+            },
+            onclosetag: function (name, isImplied) {
+                var _a;
+                (_a = getChapterListHandler.onclosetag) === null || _a === void 0 ? void 0 : _a.call(getChapterListHandler, name, isImplied);
+                this.isStarted = false;
+                if (name === 'ul') {
+                    getChapterListHandler.isStarted = false;
+                }
+            },
+        };
+        var parseNovelRouter = {
+            handlers: {
+                Unknown: undefined,
+                GetName: getNameHandler,
+                GetCover: undefined,
+                GetSummary: getSummaryHandler,
+                GetGenres: getGenresHandler,
+                GetInfos: getInfosHandler,
+                GetVolumes: getVolumesHandler,
+            },
+            action: ParseNovelAction.Unknown,
+            onopentag: function (name, attribs) {
+                var _a, _b;
+                if (attribs['class'] === 'series-name') {
+                    this.action = ParseNovelAction.GetName;
+                }
+                else if (!novel.cover && ((_a = attribs['class']) === null || _a === void 0 ? void 0 : _a.includes('img-in-ratio'))) {
+                    var background = attribs['style'];
+                    if (background) {
+                        novel.cover = background.substring(background.indexOf('http'), background.length - 2);
+                    }
+                }
+                else if (attribs['class'] === 'summary-content') {
+                    this.action = ParseNovelAction.GetSummary;
+                }
+                else if (attribs['class'] === 'series-gerne-item') {
+                    this.action = ParseNovelAction.GetGenres;
+                }
+                else if (attribs['class'] === 'info-item') {
+                    this.action = ParseNovelAction.GetInfos;
+                }
+                else if ((_b = attribs['class']) === null || _b === void 0 ? void 0 : _b.includes('volume-list')) {
+                    this.action = ParseNovelAction.GetVolumes;
+                }
+            },
+            onclosetag: function (name) {
+                var _a, _b, _c;
+                switch (this.action) {
+                    case ParseNovelAction.GetName:
+                        if ((_a = this.handlers.GetName) === null || _a === void 0 ? void 0 : _a.isDone) {
+                            this.action = ParseNovelAction.Unknown;
+                        }
+                        break;
+                    case ParseNovelAction.GetSummary:
+                        if (name === 'div') {
+                            this.action = ParseNovelAction.Unknown;
+                        }
+                        break;
+                    case ParseNovelAction.GetGenres:
+                        this.action = ParseNovelAction.Unknown;
+                        novel.genres += ',';
+                        break;
+                    case ParseNovelAction.GetInfos:
+                        if ((_b = this.handlers.GetInfos) === null || _b === void 0 ? void 0 : _b.isDone) {
+                            this.action = ParseNovelAction.Unknown;
+                        }
+                        break;
+                    case ParseNovelAction.GetVolumes:
+                        if ((_c = this.handlers.GetVolumes) === null || _c === void 0 ? void 0 : _c.isDone) {
+                            this.action = ParseNovelAction.Unknown;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            },
+        };
+        return (0, fetch_1.fetchApi)(this.site + novelPath)
+            .then(function (res) { return res.text(); })
+            .then(function (html) {
+            var _a, _b, _c;
+            var parser = new htmlparser2_1.Parser({
+                onopentag: function (name, attributes) {
+                    var _a, _b, _c;
+                    (_a = parseNovelRouter.onopentag) === null || _a === void 0 ? void 0 : _a.call(parseNovelRouter, name, attributes);
+                    if (parseNovelRouter.action) {
+                        (_c = (_b = parseNovelRouter.handlers[parseNovelRouter.action]) === null || _b === void 0 ? void 0 : _b.onopentag) === null || _c === void 0 ? void 0 : _c.call(_b, name, attributes);
+                    }
+                },
+                ontext: function (data) {
+                    var _a, _b;
+                    if (parseNovelRouter.action) {
+                        (_b = (_a = parseNovelRouter.handlers[parseNovelRouter.action]) === null || _a === void 0 ? void 0 : _a.ontext) === null || _b === void 0 ? void 0 : _b.call(_a, data);
+                    }
+                },
+                onclosetag: function (name, isImplied) {
+                    var _a, _b, _c;
+                    if (parseNovelRouter.action) {
+                        (_b = (_a = parseNovelRouter.handlers[parseNovelRouter.action]) === null || _a === void 0 ? void 0 : _a.onclosetag) === null || _b === void 0 ? void 0 : _b.call(_a, name, isImplied);
+                    }
+                    (_c = parseNovelRouter.onclosetag) === null || _c === void 0 ? void 0 : _c.call(parseNovelRouter, name, isImplied);
+                },
+            });
+            parser.write(html);
+            parser.end();
+            novel.chapters = chapters;
+            switch ((_a = novel.status) === null || _a === void 0 ? void 0 : _a.trim()) {
+                case 'Đang tiến hành':
+                    novel.status = novelStatus_1.NovelStatus.Ongoing;
+                    break;
+                case 'Tạm ngưng':
+                    novel.status = novelStatus_1.NovelStatus.OnHiatus;
+                    break;
+                case 'Completed':
+                    novel.status = novelStatus_1.NovelStatus.Completed;
+                    break;
+                default:
+                    novel.status = novelStatus_1.NovelStatus.Unknown;
+            }
+            novel.genres = (_b = novel.genres) === null || _b === void 0 ? void 0 : _b.replace(/,*\s*$/, '');
+            novel.name = novel.name.trim();
+            novel.summary = (_c = novel.summary) === null || _c === void 0 ? void 0 : _c.trim();
+            return novel;
+        });
+    };
+    HakoPlugin.prototype.parseChapter = function (chapterPath) {
+        return (0, fetch_1.fetchApi)(this.site + chapterPath)
+            .then(function (res) { return res.text(); })
+            .then(function (html) {
+            var $ = (0, cheerio_1.load)(html);
+            var protectedEl = $('#chapter-c-protected');
+            if (protectedEl.length) {
+                var s_1 = protectedEl.attr('data-s') || 'none';
+                var k_1 = protectedEl.attr('data-k') || '';
+                var c = [];
+                try {
+                    c = JSON.parse(protectedEl.attr('data-c') || '[]');
+                }
+                catch (_a) {
+                    // ignore
+                }
+                if (Array.isArray(c) && c.length > 0) {
+                    c.sort(function (a, b) { return +a.substring(0, 4) - +b.substring(0, 4); });
+                    var decryptedChunks = c.map(function (chunk) {
+                        var ciphertext = chunk.substring(4);
+                        if (s_1 === 'xor_shuffle') {
+                            return decryptXor(ciphertext, k_1);
+                        }
+                        else if (s_1 === 'base64_reverse') {
+                            return decryptBase64Reverse(ciphertext);
+                        }
+                        else {
+                            return decryptNone(ciphertext);
+                        }
+                    });
+                    var decryptedHtml = decryptedChunks.join('');
+                    decryptedHtml = decryptedHtml.replace(/\[note(\d+)\]/gi, '<span id="anchor-note$1" class="note-icon none-print inline note-tooltip" data-tooltip-content="#note$1 .note-content" data-note-id="note$1"><i class="fas fa-sticky-note"></i></span><a id="anchor-note$1" class="inline-print none" href="#note$1">[note]</a>');
+                    protectedEl.replaceWith(decryptedHtml);
+                }
+            }
+            $('a[href^="/truyen/"]').has('img[src*="chapter-banners"]').remove();
+            return $('#chapter-content').html() || 'Không tìm thấy nội dung';
+        });
+    };
+    HakoPlugin.prototype.searchNovels = function (searchTerm, pageNo) {
+        var url = this.site + '/tim-kiem?keywords=' + searchTerm + '&page=' + pageNo;
+        return this.parseNovels(url);
+    };
+    return HakoPlugin;
+}());
+function decodeBase64(str) {
+    return Uint8Array.from(atob(str), function (c) { return c.charCodeAt(0); });
+}
+function decryptXor(ciphertext, key) {
+    var data = decodeBase64(ciphertext);
+    var keyLen = key.length;
+    var decrypted = data.map(function (byte, i) { return byte ^ key.charCodeAt(i % keyLen); });
+    return new TextDecoder('utf-8').decode(decrypted);
+}
+function decryptBase64Reverse(ciphertext) {
+    var reversed = ciphertext.split('').reverse().join('');
+    return new TextDecoder('utf-8').decode(decodeBase64(reversed));
+}
+function decryptNone(ciphertext) {
+    return new TextDecoder('utf-8').decode(decodeBase64(ciphertext));
+}
+exports.default = new HakoPlugin();

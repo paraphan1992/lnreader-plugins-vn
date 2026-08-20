@@ -1,1 +1,262 @@
-var t=this&&this.__awaiter||function(t,e,r,a){return new(r||(r=Promise))(function(n,i){function o(t){try{u(a.next(t))}catch(t){i(t)}}function s(t){try{u(a.throw(t))}catch(t){i(t)}}function u(t){var e;t.done?n(t.value):(e=t.value,e instanceof r?e:new r(function(t){t(e)})).then(o,s)}u((a=a.apply(t,e||[])).next())})},e=this&&this.__generator||function(t,e){var r,a,n,i={label:0,sent:function(){if(1&n[0])throw n[1];return n[1]},trys:[],ops:[]},o=Object.create(("function"==typeof Iterator?Iterator:Object).prototype);return o.next=s(0),o.throw=s(1),o.return=s(2),"function"==typeof Symbol&&(o[Symbol.iterator]=function(){return this}),o;function s(s){return function(u){return function(s){if(r)throw new TypeError("Generator is already executing.");for(;o&&(o=0,s[0]&&(i=0)),i;)try{if(r=1,a&&(n=2&s[0]?a.return:s[0]?a.throw||((n=a.return)&&n.call(a),0):a.next)&&!(n=n.call(a,s[1])).done)return n;switch(a=0,n&&(s=[2&s[0],n.value]),s[0]){case 0:case 1:n=s;break;case 4:return i.label++,{value:s[1],done:!1};case 5:i.label++,a=s[1],s=[0];continue;case 7:s=i.ops.pop(),i.trys.pop();continue;default:if(!(n=i.trys,(n=n.length>0&&n[n.length-1])||6!==s[0]&&2!==s[0])){i=0;continue}if(3===s[0]&&(!n||s[1]>n[0]&&s[1]<n[3])){i.label=s[1];break}if(6===s[0]&&i.label<n[1]){i.label=n[1],n=s;break}if(n&&i.label<n[2]){i.label=n[2],i.ops.push(s);break}n[2]&&i.ops.pop(),i.trys.pop();continue}s=e.call(t,i)}catch(t){s=[6,t],a=0}finally{r=n=0}if(5&s[0])throw s[1];return{value:s[0]?s[1]:void 0,done:!0}}([s,u])}}};Object.defineProperty(exports,"__esModule",{value:!0});var r=require("cheerio"),a=require("@libs/fetch"),n=require("@libs/novelStatus"),i=require("@libs/filterInputs"),o=function(){function o(){this.id="truyenfull",this.name="Truyện Full",this.icon="src/vi/truyenfull/icon.png",this.site="https://truyenfull.live",this.version="2.0.0",this.filters={status:{type:i.FilterTypes.CheckboxGroup,label:"Tình trạng",value:[],options:[{label:"Đã hoàn thành",value:"hoan"}]},sort:{type:i.FilterTypes.Picker,label:"Sắp xếp",value:"",options:[{label:"Truyện mới cập nhật",value:"truyen-moi"},{label:"Truyện hot",value:"truyen-hot"},{label:"Truyện full",value:"truyen-full"},{label:"Tiên hiệp hay",value:"tien-hiep-hay"},{label:"Kiếm hiệp hay",value:"kiem-hiep-hay"},{label:"Ngôn tình hay",value:"ngon-tinh-hay"},{label:"Đam mỹ hay",value:"dam-my-hay"}]}}}return o.prototype.parseNovels=function(t){var e=this,r=[];return t(".list-truyen .row").each(function(a,n){var i=t(n).find("h3.truyen-title > a").text().trim(),o=t(n).find("div[data-classname='cover']").attr("data-image")||t(n).find(".lazyimg").attr("data-image")||t(n).find(".lazyimg").attr("data-desk-image"),s=t(n).find("h3.truyen-title > a").attr("href");s&&i&&r.push({name:i,cover:o,path:s.replace(e.site,"")})}),r},o.prototype.parseChapters=function(t){var e=this;return t("ul.list-chapter > li > a").toArray().map(function(r){var a,n=(r.attribs.href||"").replace(e.site,"");return{name:t(r).text().trim(),path:n,chapterNumber:Number(null===(a=n.match(/\/chuong-(\d+)\//))||void 0===a?void 0:a[1])}})},o.prototype.popularNovels=function(n,i){return t(this,arguments,void 0,function(t,n){var i,o,s,u,l,c,h=n.filters;return e(this,function(e){switch(e.label){case 0:if(i=this.site+"/danh-sach",h){if(h.sort&&""!==h.sort.value?i+="/".concat(h.sort.value):i+="/truyen-hot",h.status&&h.status.value)for(o=0,s=h.status.value;o<s.length;o++)u=s[o],i+="/".concat(u)}else i+="/truyen-hot";return i+="/trang-".concat(t,"/"),[4,(0,a.fetchApi)(i)];case 1:return[4,e.sent().text()];case 2:return l=e.sent(),c=(0,r.load)(l),[2,this.parseNovels(c)]}})})},o.prototype.parseNovel=function(i){return t(this,void 0,void 0,function(){var t,o,s,u,l;return e(this,function(e){switch(e.label){case 0:return t=this.site+i,[4,(0,a.fetchApi)(t)];case 1:return[4,e.sent().text()];case 2:return o=e.sent(),s=(0,r.load)(o),u=1,s("ul.pagination.pagination-sm > li > a").each(function(){var t,e=this.attribs.href||"",r=Number(null===(t=e.match(/\/trang-(\d+)\//))||void 0===t?void 0:t[1]);r&&r>u&&(u=r)}),(l={path:i,name:s("div.book > img").attr("alt")||s("h3.title").text().trim()||"Không có tiêu đề",chapters:[],totalPages:u}).cover=s("div.book > img").attr("src")||s("div.book > img").attr("data-src"),l.summary=s("div.desc-text").text().trim(),l.author=s('a[itemprop="author"]').text().trim()||s('h3:contains("Tác giả:")').parent().contents().text().replace("Tác giả:","").trim(),l.genres=s('a[itemprop="genre"]').map(function(t,e){return s(e).text().trim()}).toArray().join(", "),l.status=s("span.text-success, span.text-primary").text().trim(),l.status.toLowerCase().includes("full")||l.status.toLowerCase().includes("hoàn")?l.status=n.NovelStatus.Completed:l.status=n.NovelStatus.Ongoing,l.chapters=this.parseChapters(s),[2,l]}})})},o.prototype.parsePage=function(n,i){return t(this,void 0,void 0,function(){var t,o,s;return e(this,function(e){switch(e.label){case 0:return t="".concat(this.site).concat(n,"trang-").concat(i,"/#list-chapter"),[4,(0,a.fetchApi)(t)];case 1:return[4,e.sent().text()];case 2:return o=e.sent(),s=(0,r.load)(o),[2,{chapters:this.parseChapters(s)}]}})})},o.prototype.parseChapter=function(n){return t(this,void 0,void 0,function(){var t,i;return e(this,function(e){switch(e.label){case 0:return[4,(0,a.fetchApi)(this.site+n)];case 1:return[4,e.sent().text()];case 2:return t=e.sent(),(i=(0,r.load)(t))('script, style, iframe, button, .ads, .ad, [class*="ad-"], [id*="ad-"], [class*="colorkey"]').remove(),[2,(i(".chapter-title").html()||"")+(i("#chapter-c").html()||i(".chapter-c").html()||"")]}})})},o.prototype.searchNovels=function(n,i){return t(this,void 0,void 0,function(){var t,o,s;return e(this,function(e){switch(e.label){case 0:return t="".concat(this.site,"/tim-kiem/?tukhoa=").concat(encodeURIComponent(n),"&page=").concat(i),[4,(0,a.fetchApi)(t)];case 1:return[4,e.sent().text()];case 2:return o=e.sent(),s=(0,r.load)(o),[2,this.parseNovels(s)]}})})},o}();exports.default=new o;
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var cheerio_1 = require("cheerio");
+var fetch_1 = require("@libs/fetch");
+var novelStatus_1 = require("@libs/novelStatus");
+var filterInputs_1 = require("@libs/filterInputs");
+var TruyenFull = /** @class */ (function () {
+    function TruyenFull() {
+        this.id = 'truyenfull';
+        this.name = 'Truyện Full';
+        this.icon = 'src/vi/truyenfull/icon.png';
+        this.site = 'https://truyenfull.live';
+        this.version = '2.0.0';
+        this.filters = {
+            status: {
+                type: filterInputs_1.FilterTypes.CheckboxGroup,
+                label: 'Tình trạng',
+                value: [],
+                options: [{ label: 'Đã hoàn thành', value: 'hoan' }],
+            },
+            sort: {
+                type: filterInputs_1.FilterTypes.Picker,
+                label: 'Sắp xếp',
+                value: '',
+                options: [
+                    { label: 'Truyện mới cập nhật', value: 'truyen-moi' },
+                    { label: 'Truyện hot', value: 'truyen-hot' },
+                    { label: 'Truyện full', value: 'truyen-full' },
+                    { label: 'Tiên hiệp hay', value: 'tien-hiep-hay' },
+                    { label: 'Kiếm hiệp hay', value: 'kiem-hiep-hay' },
+                    { label: 'Ngôn tình hay', value: 'ngon-tinh-hay' },
+                    { label: 'Đam mỹ hay', value: 'dam-my-hay' },
+                ],
+            },
+        };
+    }
+    TruyenFull.prototype.parseNovels = function (loadedCheerio) {
+        var _this = this;
+        var novels = [];
+        loadedCheerio('.list-truyen .row').each(function (idx, ele) {
+            var novelName = loadedCheerio(ele).find('h3.truyen-title > a').text().trim();
+            var novelCover = loadedCheerio(ele)
+                .find("div[data-classname='cover']")
+                .attr('data-image') ||
+                loadedCheerio(ele).find('.lazyimg').attr('data-image') ||
+                loadedCheerio(ele).find('.lazyimg').attr('data-desk-image');
+            var novelUrl = loadedCheerio(ele)
+                .find('h3.truyen-title > a')
+                .attr('href');
+            if (novelUrl && novelName) {
+                novels.push({
+                    name: novelName,
+                    cover: novelCover,
+                    path: novelUrl.replace(_this.site, ''),
+                });
+            }
+        });
+        return novels;
+    };
+    TruyenFull.prototype.parseChapters = function (loadedCheerio) {
+        var _this = this;
+        return loadedCheerio('ul.list-chapter > li > a')
+            .toArray()
+            .map(function (ele) {
+            var _a;
+            var href = ele.attribs['href'] || '';
+            var path = href.replace(_this.site, '');
+            return {
+                name: loadedCheerio(ele).text().trim(),
+                path: path,
+                chapterNumber: Number((_a = path.match(/\/chuong-(\d+)\//)) === null || _a === void 0 ? void 0 : _a[1]),
+            };
+        });
+    };
+    TruyenFull.prototype.popularNovels = function (pageNo_1, _a) {
+        return __awaiter(this, arguments, void 0, function (pageNo, _b) {
+            var url, _i, _c, status_1, result, body, loadedCheerio;
+            var filters = _b.filters;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        url = this.site + '/danh-sach';
+                        if (filters) {
+                            if (filters.sort && filters.sort.value !== '') {
+                                url += "/".concat(filters.sort.value);
+                            }
+                            else {
+                                url += "/truyen-hot";
+                            }
+                            if (filters.status && filters.status.value) {
+                                for (_i = 0, _c = filters.status.value; _i < _c.length; _i++) {
+                                    status_1 = _c[_i];
+                                    url += "/".concat(status_1);
+                                }
+                            }
+                        }
+                        else {
+                            url += "/truyen-hot";
+                        }
+                        url += "/trang-".concat(pageNo, "/");
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _d.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _d.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                }
+            });
+        });
+    };
+    TruyenFull.prototype.parseNovel = function (novelPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, result, body, loadedCheerio, lastPage, novel;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = this.site + novelPath;
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        lastPage = 1;
+                        loadedCheerio('ul.pagination.pagination-sm > li > a').each(function () {
+                            var _a;
+                            var href = this.attribs['href'] || '';
+                            var page = Number((_a = href.match(/\/trang-(\d+)\//)) === null || _a === void 0 ? void 0 : _a[1]);
+                            if (page && page > lastPage)
+                                lastPage = page;
+                        });
+                        novel = {
+                            path: novelPath,
+                            name: loadedCheerio('div.book > img').attr('alt') || loadedCheerio('h3.title').text().trim() || 'Không có tiêu đề',
+                            chapters: [],
+                            totalPages: lastPage,
+                        };
+                        novel.cover = loadedCheerio('div.book > img').attr('src') || loadedCheerio('div.book > img').attr('data-src');
+                        novel.summary = loadedCheerio('div.desc-text').text().trim();
+                        novel.author = loadedCheerio('a[itemprop="author"]').text().trim() ||
+                            loadedCheerio('h3:contains("Tác giả:")').parent().contents().text().replace('Tác giả:', '').trim();
+                        novel.genres = loadedCheerio('a[itemprop="genre"]')
+                            .map(function (i, el) { return loadedCheerio(el).text().trim(); })
+                            .toArray()
+                            .join(', ');
+                        novel.status = loadedCheerio('span.text-success, span.text-primary').text().trim();
+                        if (novel.status.toLowerCase().includes('full') || novel.status.toLowerCase().includes('hoàn')) {
+                            novel.status = novelStatus_1.NovelStatus.Completed;
+                        }
+                        else {
+                            novel.status = novelStatus_1.NovelStatus.Ongoing;
+                        }
+                        novel.chapters = this.parseChapters(loadedCheerio);
+                        return [2 /*return*/, novel];
+                }
+            });
+        });
+    };
+    TruyenFull.prototype.parsePage = function (novelPath, page) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, result, body, loadedCheerio, chapters;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = "".concat(this.site).concat(novelPath, "trang-").concat(page, "/#list-chapter");
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        chapters = this.parseChapters(loadedCheerio);
+                        return [2 /*return*/, {
+                                chapters: chapters,
+                            }];
+                }
+            });
+        });
+    };
+    TruyenFull.prototype.parseChapter = function (chapterPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, body, loadedCheerio, chapterText;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        // Xóa quảng cáo và element rác
+                        loadedCheerio('script, style, iframe, button, .ads, .ad, [class*="ad-"], [id*="ad-"], [class*="colorkey"]').remove();
+                        chapterText = (loadedCheerio('.chapter-title').html() || '') +
+                            (loadedCheerio('#chapter-c').html() || loadedCheerio('.chapter-c').html() || '');
+                        return [2 /*return*/, chapterText];
+                }
+            });
+        });
+    };
+    TruyenFull.prototype.searchNovels = function (searchTerm, pageNo) {
+        return __awaiter(this, void 0, void 0, function () {
+            var searchUrl, result, body, loadedCheerio;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        searchUrl = "".concat(this.site, "/tim-kiem/?tukhoa=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl)];
+                    case 1:
+                        result = _a.sent();
+                        return [4 /*yield*/, result.text()];
+                    case 2:
+                        body = _a.sent();
+                        loadedCheerio = (0, cheerio_1.load)(body);
+                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                }
+            });
+        });
+    };
+    return TruyenFull;
+}());
+exports.default = new TruyenFull();

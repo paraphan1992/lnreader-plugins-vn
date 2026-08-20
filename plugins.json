@@ -1030,9 +1030,9 @@
   {
     "id": "nettruyen",
     "name": "NetTruyen",
-    "site": "https://nettruyen.com.vn",
+    "site": "https://nettruyenww.com",
     "lang": "Vietnamese",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/nettruyen.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/nettruyen/icon.png"
   },
@@ -1066,9 +1066,9 @@
   {
     "id": "wikidich",
     "name": "Wiki Dịch (Wikicv)",
-    "site": "https://wikicv.info",
+    "site": "https://wikisach.net",
     "lang": "Vietnamese",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/wikidich.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/wikidich/icon.png"
   },
