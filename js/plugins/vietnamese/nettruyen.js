@@ -45,7 +45,7 @@ var NetTruyenManga = /** @class */ (function () {
         this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.version = '2.2.0';
+        this.version = '2.3.0';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -77,7 +77,7 @@ var NetTruyenManga = /** @class */ (function () {
     NetTruyenManga.prototype.parseNovels = function (loadedCheerio) {
         var _this = this;
         var novels = [];
-        loadedCheerio('.item, .row .item').each(function (_, ele) {
+        loadedCheerio('.comic-item, .item, .row .item').each(function (_, ele) {
             var a = loadedCheerio(ele).find('h3 a, .title a, a.jtip');
             var href = a.attr('href');
             var name = a.text().trim();
@@ -212,7 +212,7 @@ var NetTruyenManga = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        searchUrl = "".concat(this.site, "/tim-truyen?keyword=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
+                        searchUrl = "".concat(this.site, "/tim-kiem-nang-cao?keyword=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl).then(function (r) { return r.text(); })];
                     case 1:
                         body = _a.sent();

@@ -125,15 +125,26 @@ var sha256Latin1 = function sha256Latin1(W) {
     }
     return P;
 };
-function fuzzySign(text) {
-    return text.substring(19) + text.substring(0, 19);
+function fuzzySign(text, offset) {
+    if (!offset)
+        return text;
+    return text.substring(offset) + text.substring(0, offset);
+}
+/** WikiCV rotates this offset in the inline `fuzzySign` on each book page. */
+function parseFuzzyOffset(html) {
+    var match = html.match(/substring\((\d+)\)\s*\+\s*\w+\.substring\(0,\s*\1\)/);
+    if (!match)
+        return null;
+    var offset = Number(match[1]);
+    return Number.isFinite(offset) && offset >= 0 ? offset : null;
 }
 var WikiDich = /** @class */ (function () {
     function WikiDich() {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.3.0';
+        this.version = '2.4.0';
+        this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
                 value: 'https://wikicv.org',
@@ -219,7 +230,8 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.fetchToc = function (html, novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var bookId, signKey, pageSize, chapters, seen, headers, start, sign, tocUrl, toc, batch, _i, batch_1, ch;
+            var bookId, signKey, pageSize, parsedOffset, offsets, headers, fetchPage, usedOffset, firstBatch, _i, offsets_1, offset, batch, chapters, seen, pushBatch, start, batch;
+            var _this = this;
             var _a, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -230,39 +242,82 @@ var WikiDich = /** @class */ (function () {
                             return [2 /*return*/, this.parseChapters((0, cheerio_1.load)(html))];
                         }
                         pageSize = 99;
-                        chapters = [];
-                        seen = new Set();
+                        parsedOffset = parseFuzzyOffset(html);
+                        offsets = parsedOffset != null ? [parsedOffset] : [77, 19];
                         headers = {
                             'X-Requested-With': 'XMLHttpRequest',
                             Referer: this.site + (novelPath || '/'),
                         };
-                        start = 0;
+                        fetchPage = function (start, offset) { return __awaiter(_this, void 0, void 0, function () {
+                            var sign, tocUrl, toc;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        sign = sha256Latin1(fuzzySign(signKey + start + pageSize, offset));
+                                        tocUrl = "".concat(this.site, "/book/index?bookId=").concat(encodeURIComponent(bookId)) +
+                                            "&start=".concat(start, "&size=").concat(pageSize, "&signKey=").concat(encodeURIComponent(signKey), "&sign=").concat(sign);
+                                        return [4 /*yield*/, (0, fetch_1.fetchApi)(tocUrl, { headers: headers })
+                                                .then(function (r) { return r.text(); })
+                                                .catch(function () { return ''; })];
+                                    case 1:
+                                        toc = _a.sent();
+                                        return [2 /*return*/, toc ? this.parseChapters((0, cheerio_1.load)(toc)) : []];
+                                }
+                            });
+                        }); };
+                        usedOffset = null;
+                        firstBatch = [];
+                        _i = 0, offsets_1 = offsets;
                         _c.label = 1;
                     case 1:
-                        if (!(start < 20000)) return [3 /*break*/, 4];
-                        sign = sha256Latin1(fuzzySign(signKey + start + pageSize));
-                        tocUrl = "".concat(this.site, "/book/index?bookId=").concat(encodeURIComponent(bookId)) +
-                            "&start=".concat(start, "&size=").concat(pageSize, "&signKey=").concat(encodeURIComponent(signKey), "&sign=").concat(sign);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(tocUrl, { headers: headers })
-                                .then(function (r) { return r.text(); })
-                                .catch(function () { return ''; })];
+                        if (!(_i < offsets_1.length)) return [3 /*break*/, 4];
+                        offset = offsets_1[_i];
+                        return [4 /*yield*/, fetchPage(0, offset)];
                     case 2:
-                        toc = _c.sent();
-                        batch = toc ? this.parseChapters((0, cheerio_1.load)(toc)) : [];
-                        for (_i = 0, batch_1 = batch; _i < batch_1.length; _i++) {
-                            ch = batch_1[_i];
-                            if (seen.has(ch.path))
-                                continue;
-                            seen.add(ch.path);
-                            chapters.push(__assign(__assign({}, ch), { chapterNumber: chapters.length + 1 }));
-                        }
-                        if (batch.length < pageSize)
+                        batch = _c.sent();
+                        if (batch.length) {
+                            usedOffset = offset;
+                            firstBatch = batch;
                             return [3 /*break*/, 4];
+                        }
                         _c.label = 3;
                     case 3:
-                        start += pageSize;
+                        _i++;
                         return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/, chapters.length ? chapters : this.parseChapters((0, cheerio_1.load)(html))];
+                    case 4:
+                        if (usedOffset == null) {
+                            return [2 /*return*/, this.parseChapters((0, cheerio_1.load)(html))];
+                        }
+                        chapters = [];
+                        seen = new Set();
+                        pushBatch = function (batch) {
+                            for (var _i = 0, batch_1 = batch; _i < batch_1.length; _i++) {
+                                var ch = batch_1[_i];
+                                if (seen.has(ch.path))
+                                    continue;
+                                seen.add(ch.path);
+                                chapters.push(__assign(__assign({}, ch), { chapterNumber: chapters.length + 1 }));
+                            }
+                        };
+                        pushBatch(firstBatch);
+                        if (firstBatch.length < pageSize) {
+                            return [2 /*return*/, chapters.length ? chapters : this.parseChapters((0, cheerio_1.load)(html))];
+                        }
+                        start = pageSize;
+                        _c.label = 5;
+                    case 5:
+                        if (!(start < 20000)) return [3 /*break*/, 8];
+                        return [4 /*yield*/, fetchPage(start, usedOffset)];
+                    case 6:
+                        batch = _c.sent();
+                        pushBatch(batch);
+                        if (batch.length < pageSize)
+                            return [3 /*break*/, 8];
+                        _c.label = 7;
+                    case 7:
+                        start += pageSize;
+                        return [3 /*break*/, 5];
+                    case 8: return [2 /*return*/, chapters.length ? chapters : this.parseChapters((0, cheerio_1.load)(html))];
                 }
             });
         });
@@ -340,15 +395,44 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var searchUrl, body;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var searchUrl, body, fromSearch, needle, listings, seen, matches, _i, listings_1, html, _a, _b, novel;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        searchUrl = "".concat(this.site, "/tim-kiem?q=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
+                        searchUrl = "".concat(this.site, "/tim-kiem?q=").concat(encodeURIComponent(searchTerm), "&qs=1&page=").concat(pageNo);
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl).then(function (r) { return r.text(); })];
                     case 1:
-                        body = _a.sent();
-                        return [2 /*return*/, this.parseNovels((0, cheerio_1.load)(body))];
+                        body = _c.sent();
+                        fromSearch = this.parseNovels((0, cheerio_1.load)(body));
+                        if (fromSearch.length)
+                            return [2 /*return*/, fromSearch];
+                        // Logged-out search page is "Đăng nhập để xem nội dung". Scan public lists.
+                        if (pageNo > 1)
+                            return [2 /*return*/, []];
+                        needle = searchTerm.trim().toLowerCase();
+                        if (!needle)
+                            return [2 /*return*/, []];
+                        return [4 /*yield*/, Promise.all([
+                                (0, fetch_1.fetchApi)("".concat(this.site, "/")).then(function (r) { return r.text(); }),
+                                (0, fetch_1.fetchApi)("".concat(this.site, "/chuong-moi")).then(function (r) { return r.text(); }),
+                            ])];
+                    case 2:
+                        listings = _c.sent();
+                        seen = new Set();
+                        matches = [];
+                        for (_i = 0, listings_1 = listings; _i < listings_1.length; _i++) {
+                            html = listings_1[_i];
+                            for (_a = 0, _b = this.parseNovels((0, cheerio_1.load)(html)); _a < _b.length; _a++) {
+                                novel = _b[_a];
+                                if (seen.has(novel.path))
+                                    continue;
+                                if (!novel.name.toLowerCase().includes(needle))
+                                    continue;
+                                seen.add(novel.path);
+                                matches.push(novel);
+                            }
+                        }
+                        return [2 /*return*/, matches];
                 }
             });
         });

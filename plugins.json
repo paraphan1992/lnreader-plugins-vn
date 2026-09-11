@@ -1059,7 +1059,7 @@
     "name": "Wiki Dịch (WikiCV)",
     "site": "https://wikicv.org",
     "lang": "Vietnamese",
-    "version": "2.3.0",
+    "version": "2.4.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/wikidich.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/wikidich/icon.png"
   },
@@ -1077,7 +1077,7 @@
     "name": "NetTruyen",
     "site": "https://nettruyenseo.com",
     "lang": "Vietnamese",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/nettruyen.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/nettruyen/icon.png"
   }
