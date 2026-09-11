@@ -1,4 +1,15 @@
 "use strict";
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -45,7 +56,7 @@ var NetTruyenManga = /** @class */ (function () {
         this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.version = '2.3.0';
+        this.version = '2.3.1';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -60,7 +71,13 @@ var NetTruyenManga = /** @class */ (function () {
     }
     Object.defineProperty(NetTruyenManga.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://nettruyenseo.com';
+            var site = storage_1.storage.get('site') || 'https://nettruyenseo.com';
+            if (this.imageRequestInit.headers) {
+                this.imageRequestInit.headers.Referer = site.endsWith('/')
+                    ? site
+                    : "".concat(site, "/");
+            }
+            return site;
         },
         enumerable: false,
         configurable: true
@@ -105,14 +122,20 @@ var NetTruyenManga = /** @class */ (function () {
     NetTruyenManga.prototype.parseChapters = function (loadedCheerio) {
         var _this = this;
         var chapters = [];
+        var seen = new Set();
         loadedCheerio('.list-chapter .chapter a, #nt_listchapter .chapter a').each(function (_, ele) {
             var href = loadedCheerio(ele).attr('href') || '';
             var name = loadedCheerio(ele).text().trim();
             if (!href || !name)
                 return;
-            chapters.push({ name: name, path: _this.toPath(href) });
+            var path = _this.toPath(href);
+            if (seen.has(path))
+                return;
+            seen.add(path);
+            chapters.push({ name: name, path: path });
         });
-        return chapters;
+        chapters.reverse();
+        return chapters.map(function (chapter, index) { return (__assign(__assign({}, chapter), { chapterNumber: index + 1 })); });
     };
     NetTruyenManga.prototype.popularNovels = function (pageNo) {
         return __awaiter(this, void 0, void 0, function () {
@@ -150,7 +173,9 @@ var NetTruyenManga = /** @class */ (function () {
                         novel.cover = cover
                             ? cover.startsWith('http')
                                 ? cover
-                                : this.site + cover
+                                : cover.startsWith('//')
+                                    ? "https:".concat(cover)
+                                    : this.site + cover
                             : undefined;
                         novel.summary = loadedCheerio('.detail-content p, .shortened').text().trim();
                         novel.author = loadedCheerio('.author .col-xs-8').text().trim();

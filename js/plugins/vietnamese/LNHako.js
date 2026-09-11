@@ -21,7 +21,7 @@ var HakoPlugin = /** @class */ (function () {
         this.id = 'ln.hako';
         this.name = 'Hako';
         this.icon = 'src/vi/hakolightnovel/icon.png';
-        this.version = '1.1.2';
+        this.version = '1.1.3';
         this.pluginSettings = {
             site: {
                 value: 'https://ln.hako.vn',
@@ -525,7 +525,11 @@ var HakoPlugin = /** @class */ (function () {
         });
     };
     HakoPlugin.prototype.searchNovels = function (searchTerm, pageNo) {
-        var url = this.site + '/tim-kiem?keywords=' + searchTerm + '&page=' + pageNo;
+        var url = this.site +
+            '/tim-kiem?keywords=' +
+            encodeURIComponent(searchTerm) +
+            '&page=' +
+            pageNo;
         return this.parseNovels(url);
     };
     return HakoPlugin;

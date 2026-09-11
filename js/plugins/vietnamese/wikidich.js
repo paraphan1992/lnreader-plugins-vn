@@ -46,6 +46,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
@@ -143,7 +152,7 @@ var WikiDich = /** @class */ (function () {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.4.0';
+        this.version = '2.4.1';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -230,7 +239,7 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.fetchToc = function (html, novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var bookId, signKey, pageSize, parsedOffset, offsets, headers, fetchPage, usedOffset, firstBatch, _i, offsets_1, offset, batch, chapters, seen, pushBatch, start, batch;
+            var bookId, signKey, pageSize, parsedOffset, fallbackOffsets, offsets, headers, fetchPage, usedOffset, firstBatch, _i, offsets_1, offset, batch, chapters, seen, pushBatch, start, batch;
             var _this = this;
             var _a, _b;
             return __generator(this, function (_c) {
@@ -243,7 +252,8 @@ var WikiDich = /** @class */ (function () {
                         }
                         pageSize = 99;
                         parsedOffset = parseFuzzyOffset(html);
-                        offsets = parsedOffset != null ? [parsedOffset] : [77, 19];
+                        fallbackOffsets = [61, 77, 19];
+                        offsets = __spreadArray(__spreadArray([], (parsedOffset != null ? [parsedOffset] : []), true), fallbackOffsets.filter(function (offset) { return offset !== parsedOffset; }), true);
                         headers = {
                             'X-Requested-With': 'XMLHttpRequest',
                             Referer: this.site + (novelPath || '/'),

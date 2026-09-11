@@ -46,7 +46,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.1';
+        this.version = '2.1.2';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -222,7 +222,7 @@ var SangTacViet = /** @class */ (function () {
                         url = "".concat(this.site, "/index.php?bookid=").concat(encodeURIComponent(ids.bookId)) +
                             "&h=".concat(encodeURIComponent(ids.host), "&c=").concat(encodeURIComponent(ids.chapId), "&ngmar=readc&sajax=readchapter&sty=1&exts=");
                         headers = {
-                            'X-Requested-With': 'XmlHttpRequest',
+                            'X-Requested-With': 'XMLHttpRequest',
                             Referer: this.site + chapterPath,
                             'Content-Type': 'application/x-www-form-urlencoded',
                         };
