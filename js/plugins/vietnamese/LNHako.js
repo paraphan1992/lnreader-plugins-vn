@@ -5,6 +5,7 @@ var htmlparser2_1 = require("htmlparser2");
 var cheerio_1 = require("cheerio");
 var novelStatus_1 = require("@libs/novelStatus");
 var filterInputs_1 = require("@libs/filterInputs");
+var storage_1 = require("@libs/storage");
 var ParseNovelAction;
 (function (ParseNovelAction) {
     ParseNovelAction["Unknown"] = "Unknown";
@@ -20,8 +21,13 @@ var HakoPlugin = /** @class */ (function () {
         this.id = 'ln.hako';
         this.name = 'Hako';
         this.icon = 'src/vi/hakolightnovel/icon.png';
-        this.site = 'https://ln.hako.vn';
-        this.version = '1.1.1';
+        this.version = '1.1.2';
+        this.pluginSettings = {
+            site: {
+                value: 'https://ln.hako.vn',
+                label: 'Site URL',
+            },
+        };
         this.imageRequestInit = {
             headers: {
                 Referer: this.site,
@@ -100,6 +106,13 @@ var HakoPlugin = /** @class */ (function () {
             },
         };
     }
+    Object.defineProperty(HakoPlugin.prototype, "site", {
+        get: function () {
+            return storage_1.storage.get('site') || 'https://ln.hako.vn';
+        },
+        enumerable: false,
+        configurable: true
+    });
     HakoPlugin.prototype.parseNovels = function (url) {
         return (0, fetch_1.fetchApi)(url)
             .then(function (res) { return res.text(); })

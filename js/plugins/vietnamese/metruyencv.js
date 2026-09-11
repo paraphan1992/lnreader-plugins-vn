@@ -39,156 +39,214 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
+var storage_1 = require("@libs/storage");
 var MeTruyenCv = /** @class */ (function () {
     function MeTruyenCv() {
         this.id = 'metruyencv';
         this.name = 'Mê Truyện Chữ (Metruyencv)';
         this.icon = 'src/vi/metruyencv/icon.png';
-        this.site = 'https://www.metruyencv.org';
-        this.version = '2.0.0';
+        this.version = '2.1.0';
+        this.pluginSettings = {
+            site: {
+                value: 'https://www.metruyencv.org',
+                label: 'Site URL',
+            },
+        };
         this.filters = {};
     }
-    MeTruyenCv.prototype.parseNovels = function (loadedCheerio) {
-        var _this = this;
+    Object.defineProperty(MeTruyenCv.prototype, "site", {
+        get: function () {
+            return storage_1.storage.get('site') || 'https://www.metruyencv.org';
+        },
+        enumerable: false,
+        configurable: true
+    });
+    MeTruyenCv.prototype.toPath = function (href) {
+        try {
+            var url = href.startsWith('http') ? new URL(href) : new URL(href, this.site);
+            return url.pathname.endsWith('/') ? url.pathname : "".concat(url.pathname, "/");
+        }
+        catch (_a) {
+            return href.replace(this.site, '');
+        }
+    };
+    MeTruyenCv.prototype.decodeHtml = function (value) {
+        return (0, cheerio_1.load)("<span>".concat(value, "</span>")).text().trim();
+    };
+    MeTruyenCv.prototype.stripAds = function ($) {
+        $('script, style, iframe, .ads, .adsbygoogle, [class*="quangcao"]').remove();
+    };
+    MeTruyenCv.prototype.novelsFromJson = function (items) {
+        var _a;
         var novels = [];
-        loadedCheerio('a.uk-link-heading, a[href*="/truyen/"]').each(function (idx, ele) {
-            var href = loadedCheerio(ele).attr('href');
-            var name = loadedCheerio(ele).text().trim();
-            var parent = loadedCheerio(ele).closest('div, li, article');
-            var cover = parent.find('img').attr('src') || parent.find('img').attr('data-src');
-            if (href && name && name.length > 2 && !novels.some(function (n) { return n.path === href.replace(_this.site, ''); })) {
-                novels.push({
-                    name: name,
-                    cover: (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : (cover ? _this.site + cover : undefined),
-                    path: href.replace(_this.site, ''),
-                });
-            }
-        });
+        for (var _i = 0, items_1 = items; _i < items_1.length; _i++) {
+            var item = items_1[_i];
+            var name_1 = this.decodeHtml(((_a = item.title) === null || _a === void 0 ? void 0 : _a.rendered) || '');
+            var href = item.link || (item.slug ? "".concat(this.site, "/truyen/").concat(item.slug, "/") : '');
+            if (!name_1 || !href)
+                continue;
+            novels.push({ name: name_1, path: this.toPath(href) });
+        }
         return novels;
     };
     MeTruyenCv.prototype.parseChapters = function (loadedCheerio) {
         var _this = this;
         var chapters = [];
-        loadedCheerio('a[href*="/chuong-"], .chapter-name a, ul.uk-list a').each(function (idx, ele) {
+        var seen = new Set();
+        loadedCheerio('a[href*="/chuong-"]').each(function (_, ele) {
+            var _a;
             var href = loadedCheerio(ele).attr('href') || '';
             var name = loadedCheerio(ele).text().trim();
-            if (href && name) {
-                chapters.push({
-                    name: name,
-                    path: href.replace(_this.site, ''),
-                });
-            }
+            var path = _this.toPath(href);
+            if (!path.includes('/chuong-') || !name || seen.has(path))
+                return;
+            seen.add(path);
+            chapters.push({
+                name: name,
+                path: path,
+                chapterNumber: Number((_a = path.match(/\/chuong-(\d+)/)) === null || _a === void 0 ? void 0 : _a[1]),
+            });
         });
+        chapters.sort(function (a, b) { return (a.chapterNumber || 0) - (b.chapterNumber || 0); });
         return chapters;
     };
-    MeTruyenCv.prototype.popularNovels = function (pageNo_1, _a) {
-        return __awaiter(this, arguments, void 0, function (pageNo, _b) {
-            var url, result, body, loadedCheerio;
-            var filters = _b.filters;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+    MeTruyenCv.prototype.popularNovels = function (pageNo) {
+        return __awaiter(this, void 0, void 0, function () {
+            var api, result, items, html;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        url = "".concat(this.site, "/");
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                        api = "".concat(this.site, "/wp-json/wp/v2/manga?per_page=20&page=").concat(pageNo);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(api)];
                     case 1:
-                        result = _c.sent();
-                        return [4 /*yield*/, result.text()];
+                        result = _a.sent();
+                        return [4 /*yield*/, result.json()];
                     case 2:
-                        body = _c.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                        items = _a.sent();
+                        if (Array.isArray(items) && items.length) {
+                            return [2 /*return*/, this.novelsFromJson(items)];
+                        }
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/truyen/")).then(function (r) { return r.text(); })];
+                    case 3:
+                        html = _a.sent();
+                        return [2 /*return*/, this.parseListing((0, cheerio_1.load)(html))];
                 }
             });
         });
     };
+    MeTruyenCv.prototype.parseListing = function (loadedCheerio) {
+        var _this = this;
+        var novels = [];
+        loadedCheerio('a[href*="/truyen/"]').each(function (_, ele) {
+            var href = loadedCheerio(ele).attr('href') || '';
+            var path = _this.toPath(href);
+            if (!/^\/truyen\/[^/]+\/$/.test(path))
+                return;
+            var name = loadedCheerio(ele).text().trim();
+            if (!name || name.length < 3 || novels.some(function (n) { return n.path === path; }))
+                return;
+            novels.push({ name: name, path: path });
+        });
+        return novels;
+    };
     MeTruyenCv.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, result, body, loadedCheerio, novel, cover;
+            var url, body, $, novel, cover, chapters, ajax;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         url = this.site + novelPath;
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
+                        $ = (0, cheerio_1.load)(body);
+                        this.stripAds($);
                         novel = {
                             path: novelPath,
-                            name: loadedCheerio('h1').text().trim() || 'Truyện MTC',
+                            name: $('h1').first().text().trim() || 'Truyện MTC',
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = loadedCheerio('img.image-3-4, img[alt*="Ảnh bìa"]').attr('src');
-                        novel.cover = (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : (cover ? this.site + cover : undefined);
-                        novel.summary = loadedCheerio('.uk-text-break, .desc, .summary').text().trim();
+                        cover = $('img').first().attr('src') || $('img').first().attr('data-src');
+                        novel.cover = cover
+                            ? cover.startsWith('http')
+                                ? cover
+                                : this.site + cover
+                            : undefined;
+                        novel.summary = $('.summary, .description, .entry-content').first().text().trim();
                         novel.status = novelStatus_1.NovelStatus.Ongoing;
-                        novel.chapters = this.parseChapters(loadedCheerio);
+                        chapters = this.parseChapters($);
+                        if (!(chapters.length < 2)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(url, "ajax/chapters/"), {
+                                method: 'POST',
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                            })
+                                .then(function (r) { return r.text(); })
+                                .catch(function () { return ''; })];
+                    case 2:
+                        ajax = _a.sent();
+                        if (ajax) {
+                            chapters = this.parseChapters((0, cheerio_1.load)(ajax));
+                        }
+                        _a.label = 3;
+                    case 3:
+                        novel.chapters = chapters;
                         return [2 /*return*/, novel];
                 }
             });
         });
     };
-    MeTruyenCv.prototype.parsePage = function (novelPath, page) {
+    MeTruyenCv.prototype.parsePage = function (novelPath, _page) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, result, body, loadedCheerio;
+            var body;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        url = "".concat(this.site).concat(novelPath);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site).concat(novelPath)).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, {
-                                chapters: this.parseChapters(loadedCheerio),
-                            }];
+                        return [2 /*return*/, { chapters: this.parseChapters((0, cheerio_1.load)(body)) }];
                 }
             });
         });
     };
     MeTruyenCv.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, body, loadedCheerio, chapterText;
+            var body, $;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        loadedCheerio('script, style, iframe, .ads').remove();
-                        chapterText = (loadedCheerio('#chapter-c').html() ||
-                            loadedCheerio('.chapter-c').html() ||
-                            loadedCheerio('.reading-content').html() ||
-                            loadedCheerio('#article').html() || '');
-                        return [2 /*return*/, chapterText];
+                        $ = (0, cheerio_1.load)(body);
+                        this.stripAds($);
+                        return [2 /*return*/, ($('.chapter-content').html() ||
+                                $('.uk-article').html() ||
+                                $('#chapter-c').html() ||
+                                '')];
                 }
             });
         });
     };
     MeTruyenCv.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var searchUrl, result, body, loadedCheerio;
+            var api, result, items, html;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        searchUrl = "".concat(this.site, "/?s=").concat(encodeURIComponent(searchTerm));
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl)];
+                        api = "".concat(this.site, "/wp-json/wp/v2/manga?search=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo, "&per_page=20");
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(api)];
                     case 1:
                         result = _a.sent();
-                        return [4 /*yield*/, result.text()];
+                        return [4 /*yield*/, result.json()];
                     case 2:
-                        body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                        items = _a.sent();
+                        if (Array.isArray(items) && items.length) {
+                            return [2 /*return*/, this.novelsFromJson(items)];
+                        }
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/?s=").concat(encodeURIComponent(searchTerm))).then(function (r) { return r.text(); })];
+                    case 3:
+                        html = _a.sent();
+                        return [2 /*return*/, this.parseListing((0, cheerio_1.load)(html))];
                 }
             });
         });

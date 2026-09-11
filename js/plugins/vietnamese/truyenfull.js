@@ -40,13 +40,19 @@ var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
 var filterInputs_1 = require("@libs/filterInputs");
+var storage_1 = require("@libs/storage");
 var TruyenFull = /** @class */ (function () {
     function TruyenFull() {
         this.id = 'truyenfull';
         this.name = 'Truyện Full';
         this.icon = 'src/vi/truyenfull/icon.png';
-        this.site = 'https://truyenfull.live';
-        this.version = '2.0.0';
+        this.version = '2.1.0';
+        this.pluginSettings = {
+            site: {
+                value: 'https://truyenfull.live',
+                label: 'Site URL',
+            },
+        };
         this.filters = {
             status: {
                 type: filterInputs_1.FilterTypes.CheckboxGroup,
@@ -70,6 +76,13 @@ var TruyenFull = /** @class */ (function () {
             },
         };
     }
+    Object.defineProperty(TruyenFull.prototype, "site", {
+        get: function () {
+            return storage_1.storage.get('site') || 'https://truyenfull.live';
+        },
+        enumerable: false,
+        configurable: true
+    });
     TruyenFull.prototype.parseNovels = function (loadedCheerio) {
         var _this = this;
         var novels = [];
@@ -219,7 +232,7 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, body, loadedCheerio, chapterText;
+            var result, body, loadedCheerio, title, chapterBody, chapterText;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
@@ -230,9 +243,12 @@ var TruyenFull = /** @class */ (function () {
                         body = _a.sent();
                         loadedCheerio = (0, cheerio_1.load)(body);
                         // Xóa quảng cáo và element rác
-                        loadedCheerio('script, style, iframe, button, .ads, .ad, [class*="ad-"], [id*="ad-"], [class*="colorkey"]').remove();
-                        chapterText = (loadedCheerio('.chapter-title').html() || '') +
-                            (loadedCheerio('#chapter-c').html() || loadedCheerio('.chapter-c').html() || '');
+                        loadedCheerio('script, style, iframe, button, .ads, .ad, .adsbygoogle, [class*="ad-"], [id*="ad-"], [class*="colorkey"], [class*="quangcao"]').remove();
+                        title = loadedCheerio('.chapter-title').html() || '';
+                        chapterBody = loadedCheerio('#chapter-c').html() ||
+                            loadedCheerio('.chapter-c').html() ||
+                            '';
+                        chapterText = title + chapterBody;
                         return [2 /*return*/, chapterText];
                 }
             });

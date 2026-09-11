@@ -40,16 +40,23 @@ var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var filterInputs_1 = require("@libs/filterInputs");
 var novelStatus_1 = require("@libs/novelStatus");
+var storage_1 = require("@libs/storage");
 var CHAPTER_PATH = /^\/truyen\/([^/]+)\/chuong-(\d+)$/;
 var TruyenSS = /** @class */ (function () {
     function TruyenSS() {
         this.id = 'truyenss.com';
         this.name = 'TruyenSS';
         this.icon = 'src/vi/truyenss/icon.png';
-        this.site = 'https://truyenss.com';
-        this.version = '1.0.0';
+        this.version = '1.1.0';
+        this.webStorageUtilized = true;
+        this.pluginSettings = {
+            site: {
+                value: 'https://truyenss.com',
+                label: 'Site URL',
+            },
+        };
         this.imageRequestInit = {
-            headers: { Referer: this.site + '/' },
+            headers: { Referer: 'https://truyenss.com/' },
         };
         this.filters = {
             genre: {
@@ -91,6 +98,13 @@ var TruyenSS = /** @class */ (function () {
             },
         };
     }
+    Object.defineProperty(TruyenSS.prototype, "site", {
+        get: function () {
+            return storage_1.storage.get('site') || 'https://truyenss.com';
+        },
+        enumerable: false,
+        configurable: true
+    });
     Object.defineProperty(TruyenSS.prototype, "sitePlaceholderCover", {
         /** Host-local placeholder from the site (og:image); works with plugin Referer headers. */
         get: function () {
@@ -159,9 +173,27 @@ var TruyenSS = /** @class */ (function () {
         });
         return novels;
     };
+    TruyenSS.prototype.listFromLayout = function (query) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, body;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        url = "".concat(this.site, "/layout/list-danh-muc-truyen.php?query=") +
+                            encodeURIComponent(query);
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url, {
+                                headers: { Referer: this.site + '/' },
+                            }).then(function (r) { return r.text(); })];
+                    case 1:
+                        body = _a.sent();
+                        return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body), url)];
+                }
+            });
+        });
+    };
     TruyenSS.prototype.popularNovels = function (pageNo_1, _a) {
         return __awaiter(this, arguments, void 0, function (pageNo, _b) {
-            var body_1, genre, url, body;
+            var body_1, fromHome, genre, url, body, fromPage;
             var _c;
             var showLatestNovels = _b.showLatestNovels, filters = _b.filters;
             return __generator(this, function (_d) {
@@ -173,7 +205,8 @@ var TruyenSS = /** @class */ (function () {
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + '/').then(function (r) { return r.text(); })];
                     case 1:
                         body_1 = _d.sent();
-                        return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body_1), "".concat(this.site, "/"))];
+                        fromHome = this.collectTruyenLinks((0, cheerio_1.load)(body_1), "".concat(this.site, "/"));
+                        return [2 /*return*/, fromHome.length ? fromHome : this.listFromLayout('1')];
                     case 2:
                         genre = (_c = filters === null || filters === void 0 ? void 0 : filters.genre.value) !== null && _c !== void 0 ? _c : 'tien-hiep';
                         url = pageNo <= 1
@@ -182,7 +215,12 @@ var TruyenSS = /** @class */ (function () {
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
                     case 3:
                         body = _d.sent();
-                        return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body), url)];
+                        fromPage = this.collectTruyenLinks((0, cheerio_1.load)(body), url);
+                        if (fromPage.length)
+                            return [2 /*return*/, fromPage];
+                        if (pageNo > 1)
+                            return [2 /*return*/, []];
+                        return [2 /*return*/, this.listFromLayout('1')];
                 }
             });
         });
@@ -332,13 +370,14 @@ var TruyenSS = /** @class */ (function () {
     };
     TruyenSS.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var q, tryUrls, _i, tryUrls_1, tryUrl, body, novels;
+            var raw, q, tryUrls, _i, tryUrls_1, tryUrl, body, novels, safe;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        q = encodeURIComponent(searchTerm.trim());
-                        if (!q)
+                        raw = searchTerm.trim();
+                        if (!raw)
                             return [2 /*return*/, []];
+                        q = encodeURIComponent(raw);
                         tryUrls = [
                             "".concat(this.site, "/tim-kiem?q=").concat(q, "&page=").concat(pageNo),
                             "".concat(this.site, "/tim-kiem/").concat(q, "?page=").concat(pageNo),
@@ -359,7 +398,11 @@ var TruyenSS = /** @class */ (function () {
                     case 3:
                         _i++;
                         return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/, []];
+                    case 4:
+                        if (pageNo > 1)
+                            return [2 /*return*/, []];
+                        safe = raw.replace(/["'%\\]/g, '');
+                        return [2 /*return*/, this.listFromLayout(" ( ten LIKE \"%".concat(safe, "%\" OR tac_gia LIKE \"%").concat(safe, "%\" ) "))];
                 }
             });
         });

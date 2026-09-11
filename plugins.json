@@ -1003,18 +1003,18 @@
   {
     "id": "lightnovel.vn",
     "name": "Light Novel VN",
-    "site": "https://lightnovel.vn",
+    "site": "https://hub.ranobe.vn",
     "lang": "Vietnamese",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/lightnovelvn.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/lightnovelvn/icon.png"
   },
   {
     "id": "ln.hako",
-    "name": "Hako Light Novel",
+    "name": "Hako",
     "site": "https://ln.hako.vn",
     "lang": "Vietnamese",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/LNHako.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/hakolightnovel/icon.png"
   },
@@ -1023,25 +1023,16 @@
     "name": "Mê Truyện Chữ (Metruyencv)",
     "site": "https://www.metruyencv.org",
     "lang": "Vietnamese",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/metruyencv.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/metruyencv/icon.png"
-  },
-  {
-    "id": "nettruyen",
-    "name": "NetTruyen",
-    "site": "https://nettruyenww.com",
-    "lang": "Vietnamese",
-    "version": "2.1.0",
-    "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/nettruyen.js",
-    "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/nettruyen/icon.png"
   },
   {
     "id": "sangtacviet",
     "name": "Sáng Tác Việt",
     "site": "https://sangtacviet.app",
     "lang": "Vietnamese",
-    "version": "2.0.0",
+    "version": "2.1.1",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/sangtacviet.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/sangtacviet/icon.png"
   },
@@ -1050,7 +1041,7 @@
     "name": "Truyện Full",
     "site": "https://truyenfull.live",
     "lang": "Vietnamese",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/truyenfull.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/truyenfull/icon.png"
   },
@@ -1059,16 +1050,16 @@
     "name": "TruyenSS",
     "site": "https://truyenss.com",
     "lang": "Vietnamese",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/truyenss.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/truyenss/icon.png"
   },
   {
     "id": "wikidich",
-    "name": "Wiki Dịch (Wikicv)",
-    "site": "https://wikisach.net",
+    "name": "Wiki Dịch (WikiCV)",
+    "site": "https://wikicv.org",
     "lang": "Vietnamese",
-    "version": "2.1.0",
+    "version": "2.3.0",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/wikidich.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/wikidich/icon.png"
   },
@@ -1080,5 +1071,14 @@
     "version": "1.0.2",
     "url": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/js/src/plugins/multi/komga.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/multi/komga/icon.png"
+  },
+  {
+    "id": "nettruyen-manga",
+    "name": "NetTruyen",
+    "site": "https://nettruyenseo.com",
+    "lang": "Vietnamese",
+    "version": "2.2.0",
+    "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/nettruyen.js",
+    "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/nettruyen/icon.png"
   }
 ]

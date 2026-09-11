@@ -39,91 +39,119 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
-var NetTruyen = /** @class */ (function () {
-    function NetTruyen() {
-        this.id = 'nettruyen';
+var storage_1 = require("@libs/storage");
+var NetTruyenManga = /** @class */ (function () {
+    function NetTruyenManga() {
+        this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.site = 'https://nettruyenww.com';
-        this.version = '2.1.0';
+        this.version = '2.2.0';
+        this.webStorageUtilized = true;
+        this.pluginSettings = {
+            site: {
+                value: 'https://nettruyenseo.com',
+                label: 'Site URL',
+            },
+        };
+        this.imageRequestInit = {
+            headers: { Referer: 'https://nettruyenseo.com/' },
+        };
         this.filters = {};
     }
-    NetTruyen.prototype.parseNovels = function (loadedCheerio) {
+    Object.defineProperty(NetTruyenManga.prototype, "site", {
+        get: function () {
+            return storage_1.storage.get('site') || 'https://nettruyenseo.com';
+        },
+        enumerable: false,
+        configurable: true
+    });
+    NetTruyenManga.prototype.toPath = function (href) {
+        try {
+            var url = href.startsWith('http') ? new URL(href) : new URL(href, this.site);
+            return url.pathname;
+        }
+        catch (_a) {
+            return href.replace(this.site, '');
+        }
+    };
+    NetTruyenManga.prototype.parseNovels = function (loadedCheerio) {
         var _this = this;
         var novels = [];
-        loadedCheerio('.item, .row .item').each(function (idx, ele) {
+        loadedCheerio('.item, .row .item').each(function (_, ele) {
             var a = loadedCheerio(ele).find('h3 a, .title a, a.jtip');
             var href = a.attr('href');
             var name = a.text().trim();
             var cover = loadedCheerio(ele).find('.image img, img').attr('data-original') ||
                 loadedCheerio(ele).find('.image img, img').attr('src');
-            if (href && name && !novels.some(function (n) { return n.path === href.replace(_this.site, ''); })) {
-                novels.push({
-                    name: name,
-                    cover: (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : (cover ? _this.site + cover : undefined),
-                    path: href.replace(_this.site, ''),
-                });
-            }
+            if (!href || !name)
+                return;
+            var path = _this.toPath(href);
+            if (novels.some(function (n) { return n.path === path; }))
+                return;
+            novels.push({
+                name: name,
+                cover: cover
+                    ? cover.startsWith('http')
+                        ? cover
+                        : cover.startsWith('//')
+                            ? "https:".concat(cover)
+                            : _this.site + cover
+                    : undefined,
+                path: path,
+            });
         });
         return novels;
     };
-    NetTruyen.prototype.parseChapters = function (loadedCheerio) {
+    NetTruyenManga.prototype.parseChapters = function (loadedCheerio) {
         var _this = this;
         var chapters = [];
-        loadedCheerio('.list-chapter .chapter a, #nt_listchapter .chapter a').each(function (idx, ele) {
+        loadedCheerio('.list-chapter .chapter a, #nt_listchapter .chapter a').each(function (_, ele) {
             var href = loadedCheerio(ele).attr('href') || '';
             var name = loadedCheerio(ele).text().trim();
-            if (href && name) {
-                chapters.push({
-                    name: name,
-                    path: href.replace(_this.site, ''),
-                });
-            }
+            if (!href || !name)
+                return;
+            chapters.push({ name: name, path: _this.toPath(href) });
         });
         return chapters;
     };
-    NetTruyen.prototype.popularNovels = function (pageNo_1, _a) {
-        return __awaiter(this, arguments, void 0, function (pageNo, _b) {
-            var url, result, body, loadedCheerio;
-            var filters = _b.filters;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+    NetTruyenManga.prototype.popularNovels = function (pageNo) {
+        return __awaiter(this, void 0, void 0, function () {
+            var url, body;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         url = "".concat(this.site, "/?page=").concat(pageNo);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _c.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
-                        body = _c.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                        body = _a.sent();
+                        return [2 /*return*/, this.parseNovels((0, cheerio_1.load)(body))];
                 }
             });
         });
     };
-    NetTruyen.prototype.parseNovel = function (novelPath) {
+    NetTruyenManga.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, result, body, loadedCheerio, novel, cover;
+            var body, loadedCheerio, novel, cover;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        url = this.site + novelPath;
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + novelPath).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
                         loadedCheerio = (0, cheerio_1.load)(body);
                         novel = {
                             path: novelPath,
-                            name: loadedCheerio('.title-detail, h1.title-detail').text().trim() || 'Truyện Tranh',
+                            name: loadedCheerio('.title-detail, h1.title-detail').text().trim() ||
+                                'Truyện Tranh',
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = loadedCheerio('.col-image img').attr('src') || loadedCheerio('.col-image img').attr('data-original');
-                        novel.cover = (cover === null || cover === void 0 ? void 0 : cover.startsWith('http')) ? cover : (cover ? this.site + cover : undefined);
+                        cover = loadedCheerio('.col-image img').attr('src') ||
+                            loadedCheerio('.col-image img').attr('data-original');
+                        novel.cover = cover
+                            ? cover.startsWith('http')
+                                ? cover
+                                : this.site + cover
+                            : undefined;
                         novel.summary = loadedCheerio('.detail-content p, .shortened').text().trim();
                         novel.author = loadedCheerio('.author .col-xs-8').text().trim();
                         novel.status = novelStatus_1.NovelStatus.Ongoing;
@@ -133,72 +161,66 @@ var NetTruyen = /** @class */ (function () {
             });
         });
     };
-    NetTruyen.prototype.parsePage = function (novelPath, page) {
+    NetTruyenManga.prototype.parsePage = function (novelPath, _page) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, result, body, loadedCheerio;
+            var body;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        url = "".concat(this.site).concat(novelPath);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + novelPath).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, {
-                                chapters: this.parseChapters(loadedCheerio),
-                            }];
+                        return [2 /*return*/, { chapters: this.parseChapters((0, cheerio_1.load)(body)) }];
                 }
             });
         });
     };
-    NetTruyen.prototype.parseChapter = function (chapterPath) {
+    NetTruyenManga.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, body, loadedCheerio, images;
+            var body, loadedCheerio, images;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
+                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath, {
+                            headers: { Referer: this.site + '/' },
+                        }).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
                         loadedCheerio = (0, cheerio_1.load)(body);
+                        loadedCheerio('script, iframe, .ads, .adsbygoogle').remove();
                         images = [];
-                        loadedCheerio('.reading-detail .page-chapter img, .reading-detail img').each(function (idx, ele) {
-                            var src = loadedCheerio(ele).attr('data-original') || loadedCheerio(ele).attr('src');
-                            if (src) {
-                                var fullSrc = src.startsWith('http') ? src : (src.startsWith('//') ? 'https:' + src : _this.site + src);
-                                images.push("<img src=\"".concat(fullSrc, "\" style=\"width:100%;margin-bottom:8px;\"/>"));
-                            }
+                        loadedCheerio('.reading-detail .page-chapter img, .reading-detail img, .page-chapter img').each(function (_, ele) {
+                            var src = loadedCheerio(ele).attr('data-src') ||
+                                loadedCheerio(ele).attr('data-original') ||
+                                loadedCheerio(ele).attr('src');
+                            if (!src || src.startsWith('data:'))
+                                return;
+                            var fullSrc = src.startsWith('http')
+                                ? src
+                                : src.startsWith('//')
+                                    ? "https:".concat(src)
+                                    : _this.site + src;
+                            images.push("<img src=\"".concat(fullSrc, "\" style=\"width:100%;margin-bottom:8px;\"/>"));
                         });
                         return [2 /*return*/, images.join('\n')];
                 }
             });
         });
     };
-    NetTruyen.prototype.searchNovels = function (searchTerm, pageNo) {
+    NetTruyenManga.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var searchUrl, result, body, loadedCheerio;
+            var searchUrl, body;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         searchUrl = "".concat(this.site, "/tim-truyen?keyword=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl)];
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl).then(function (r) { return r.text(); })];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
                         body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                        return [2 /*return*/, this.parseNovels((0, cheerio_1.load)(body))];
                 }
             });
         });
     };
-    return NetTruyen;
+    return NetTruyenManga;
 }());
-exports.default = new NetTruyen();
+exports.default = new NetTruyenManga();
