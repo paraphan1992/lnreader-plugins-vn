@@ -45,7 +45,7 @@ var MeTruyenCv = /** @class */ (function () {
         this.id = 'metruyencv';
         this.name = 'Mê Truyện Chữ (Metruyencv)';
         this.icon = 'src/vi/metruyencv/icon.png';
-        this.version = '2.1.2';
+        this.version = '2.1.3';
         this.pluginSettings = {
             site: {
                 value: 'https://www.metruyencv.org',
@@ -93,13 +93,18 @@ var MeTruyenCv = /** @class */ (function () {
         var _this = this;
         var chapters = [];
         var seen = new Set();
-        loadedCheerio('a[href*="/chuong-"]').each(function (_, ele) {
+        var nodes = loadedCheerio('#chapter-list a[href*="/chuong-"], .chapter-item a[href*="/chuong-"]');
+        var links = nodes.length
+            ? nodes
+            : loadedCheerio('a[href*="/chuong-"]');
+        links.each(function (_, ele) {
             var _a;
             var href = loadedCheerio(ele).attr('href') || '';
-            var name = loadedCheerio(ele).text().trim();
+            var name = loadedCheerio(ele).text().replace(/\s+/g, ' ').trim();
             var path = _this.toPath(href);
-            if (!path.includes('/chuong-') || !name || seen.has(path))
+            if (!path.includes('/chuong-') || !name || name === 'Đọc' || seen.has(path)) {
                 return;
+            }
             seen.add(path);
             chapters.push({
                 name: name,
@@ -109,6 +114,84 @@ var MeTruyenCv = /** @class */ (function () {
         });
         chapters.sort(function (a, b) { return (a.chapterNumber || 0) - (b.chapterNumber || 0); });
         return chapters;
+    };
+    MeTruyenCv.prototype.listLastPage = function (loadedCheerio) {
+        var lastPage = 1;
+        loadedCheerio('a[href*="/chuong/page/"]').each(function (_, ele) {
+            var _a;
+            var href = loadedCheerio(ele).attr('href') || '';
+            var page = Number((_a = href.match(/\/chuong\/page\/(\d+)/)) === null || _a === void 0 ? void 0 : _a[1]);
+            if (page > lastPage)
+                lastPage = page;
+        });
+        return Math.min(lastPage, 80);
+    };
+    MeTruyenCv.prototype.mergeChapters = function (target, incoming) {
+        var seen = new Set(target.map(function (chapter) { return chapter.path; }));
+        var added = 0;
+        for (var _i = 0, incoming_1 = incoming; _i < incoming_1.length; _i++) {
+            var chapter = incoming_1[_i];
+            if (seen.has(chapter.path))
+                continue;
+            seen.add(chapter.path);
+            target.push(chapter);
+            added += 1;
+        }
+        return added;
+    };
+    MeTruyenCv.prototype.fetchAllChapters = function (novelPath) {
+        return __awaiter(this, void 0, void 0, function () {
+            var firstUrl, firstHtml, first$, chapters, lastPage, concurrency, page, chunk, next, pages, added, _i, pages_1, html;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        firstUrl = "".concat(this.site).concat(novelPath, "chuong/page/1/");
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(firstUrl)
+                                .then(function (r) { return r.text(); })
+                                .catch(function () { return ''; })];
+                    case 1:
+                        firstHtml = _a.sent();
+                        first$ = firstHtml ? (0, cheerio_1.load)(firstHtml) : (0, cheerio_1.load)('');
+                        chapters = this.parseChapters(first$);
+                        lastPage = this.listLastPage(first$);
+                        if (lastPage <= 1)
+                            return [2 /*return*/, chapters];
+                        concurrency = 4;
+                        page = 2;
+                        _a.label = 2;
+                    case 2:
+                        if (!(page <= lastPage)) return [3 /*break*/, 5];
+                        chunk = [];
+                        for (next = page; next < page + concurrency && next <= lastPage; next++) {
+                            chunk.push(next);
+                        }
+                        return [4 /*yield*/, Promise.all(chunk.map(function (pageNo) {
+                                return (0, fetch_1.fetchApi)("".concat(_this.site).concat(novelPath, "chuong/page/").concat(pageNo, "/"))
+                                    .then(function (r) { return r.text(); })
+                                    .catch(function () { return ''; });
+                            }))];
+                    case 3:
+                        pages = _a.sent();
+                        added = 0;
+                        for (_i = 0, pages_1 = pages; _i < pages_1.length; _i++) {
+                            html = pages_1[_i];
+                            if (!html)
+                                continue;
+                            added += this.mergeChapters(chapters, this.parseChapters((0, cheerio_1.load)(html)));
+                        }
+                        if (!added)
+                            return [3 /*break*/, 5];
+                        _a.label = 4;
+                    case 4:
+                        page += concurrency;
+                        return [3 /*break*/, 2];
+                    case 5:
+                        chapters.sort(function (a, b) { return (a.chapterNumber || 0) - (b.chapterNumber || 0); });
+                        return [2 /*return*/, chapters];
+                }
+            });
+        });
     };
     MeTruyenCv.prototype.popularNovels = function (pageNo) {
         return __awaiter(this, void 0, void 0, function () {
@@ -187,23 +270,31 @@ var MeTruyenCv = /** @class */ (function () {
                                     ? "https:".concat(cover)
                                     : this.site + cover
                             : undefined;
-                        novel.summary = $('.summary, .description, .entry-content').first().text().trim();
+                        novel.summary = $('.summary, .description, .entry-content, #manga-description')
+                            .first()
+                            .text()
+                            .trim();
                         novel.status = novelStatus_1.NovelStatus.Ongoing;
-                        chapters = this.parseChapters($);
-                        if (!(chapters.length < 2)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.fetchAllChapters(novelPath)];
+                    case 2:
+                        chapters = _a.sent();
+                        if (chapters.length < 2) {
+                            chapters = this.parseChapters($);
+                        }
+                        if (!(chapters.length < 2)) return [3 /*break*/, 4];
                         return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(url, "ajax/chapters/"), {
                                 method: 'POST',
                                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                             })
                                 .then(function (r) { return r.text(); })
                                 .catch(function () { return ''; })];
-                    case 2:
+                    case 3:
                         ajax = _a.sent();
                         if (ajax) {
                             chapters = this.parseChapters((0, cheerio_1.load)(ajax));
                         }
-                        _a.label = 3;
-                    case 3:
+                        _a.label = 4;
+                    case 4:
                         novel.chapters = chapters;
                         return [2 /*return*/, novel];
                 }
@@ -212,13 +303,13 @@ var MeTruyenCv = /** @class */ (function () {
     };
     MeTruyenCv.prototype.parsePage = function (novelPath, _page) {
         return __awaiter(this, void 0, void 0, function () {
-            var body;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site).concat(novelPath)).then(function (r) { return r.text(); })];
-                    case 1:
-                        body = _a.sent();
-                        return [2 /*return*/, { chapters: this.parseChapters((0, cheerio_1.load)(body)) }];
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = {};
+                        return [4 /*yield*/, this.fetchAllChapters(novelPath)];
+                    case 1: return [2 /*return*/, (_a.chapters = _b.sent(), _a)];
                 }
             });
         });
@@ -247,7 +338,10 @@ var MeTruyenCv = /** @class */ (function () {
                             node.removeAttr('width');
                             node.removeAttr('height');
                         });
-                        return [2 /*return*/, ($('.chapter-content').html() ||
+                        return [2 /*return*/, ($('#chapter-content').html() ||
+                                $('.uk-article.text-based').html() ||
+                                $('.chapter-body').html() ||
+                                $('.chapter-content').html() ||
                                 $('.uk-article').html() ||
                                 $('#chapter-c').html() ||
                                 '')];

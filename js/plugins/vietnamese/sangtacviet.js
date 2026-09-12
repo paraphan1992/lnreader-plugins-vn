@@ -46,11 +46,11 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.3';
+        this.version = '2.1.4';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
-                value: 'https://sangtacviet.app',
+                value: 'https://sangtacviet.com',
                 label: 'Site URL',
             },
         };
@@ -58,7 +58,7 @@ var SangTacViet = /** @class */ (function () {
     }
     Object.defineProperty(SangTacViet.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://sangtacviet.app';
+            return storage_1.storage.get('site') || 'https://sangtacviet.com';
         },
         enumerable: false,
         configurable: true

@@ -22,16 +22,16 @@
     "name": "Mê Truyện Chữ (Metruyencv)",
     "site": "https://www.metruyencv.org",
     "lang": "Tiếng Việt",
-    "version": "2.1.2",
+    "version": "2.1.3",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/metruyencv.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/metruyencv/icon.png"
   },
   {
     "id": "sangtacviet",
     "name": "Sáng Tác Việt",
-    "site": "https://sangtacviet.app",
+    "site": "https://sangtacviet.com",
     "lang": "Tiếng Việt",
-    "version": "2.1.3",
+    "version": "2.1.4",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/sangtacviet.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/sangtacviet/icon.png"
   },
@@ -58,7 +58,7 @@
     "name": "Wiki Dịch (WikiCV)",
     "site": "https://wikicv.org",
     "lang": "Tiếng Việt",
-    "version": "2.4.3",
+    "version": "2.4.4",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/wikidich.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/wikidich/icon.png"
   },

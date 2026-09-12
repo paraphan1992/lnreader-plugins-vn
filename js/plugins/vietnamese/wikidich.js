@@ -152,7 +152,7 @@ var WikiDich = /** @class */ (function () {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.4.3';
+        this.version = '2.4.4';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -255,7 +255,7 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.fetchToc = function (html, novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var bookId, signKey, pageSize, parsedOffset, fallbackOffsets, offsets, headers, fetchPage, usedOffset, firstBatch, _i, offsets_1, offset, batch, chapters, seen, pushBatch, start, batch;
+            var bookId, signKey, pageSize, parsedOffset, fallbackOffsets, offsets, headers, fetchPage, usedOffset, firstBatch, _i, offsets_1, offset, batch, chapters, seen, pushBatch, start, batch, before;
             var _this = this;
             var _a, _b;
             return __generator(this, function (_c) {
@@ -335,7 +335,10 @@ var WikiDich = /** @class */ (function () {
                         batch = _c.sent();
                         if (!batch.length)
                             return [3 /*break*/, 8];
+                        before = chapters.length;
                         pushBatch(batch);
+                        if (chapters.length === before)
+                            return [3 /*break*/, 8];
                         _c.label = 7;
                     case 7:
                         start += pageSize;
