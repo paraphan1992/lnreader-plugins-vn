@@ -21,7 +21,7 @@ var HakoPlugin = /** @class */ (function () {
         this.id = 'ln.hako';
         this.name = 'Hako';
         this.icon = 'src/vi/hakolightnovel/icon.png';
-        this.version = '1.1.3';
+        this.version = '1.1.4';
         this.pluginSettings = {
             site: {
                 value: 'https://ln.hako.vn',
@@ -521,6 +521,20 @@ var HakoPlugin = /** @class */ (function () {
                 }
             }
             $('a[href^="/truyen/"]').has('img[src*="chapter-banners"]').remove();
+            $('img').each(function (_, el) {
+                var node = $(el);
+                var src = node.attr('data-src') ||
+                    node.attr('data-original') ||
+                    node.attr('data-lazy-src') ||
+                    node.attr('src') ||
+                    '';
+                if (!src || src.startsWith('data:'))
+                    return;
+                node.attr('src', src.startsWith('//') ? "https:".concat(src) : src);
+                node.removeAttr('srcset');
+                node.removeAttr('width');
+                node.removeAttr('height');
+            });
             return $('#chapter-content').html() || 'Không tìm thấy nội dung';
         });
     };

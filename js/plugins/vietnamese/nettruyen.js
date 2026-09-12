@@ -56,7 +56,7 @@ var NetTruyenManga = /** @class */ (function () {
         this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.version = '2.3.1';
+        this.version = '2.3.2';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -224,7 +224,7 @@ var NetTruyenManga = /** @class */ (function () {
                                 : src.startsWith('//')
                                     ? "https:".concat(src)
                                     : _this.site + src;
-                            images.push("<img src=\"".concat(fullSrc, "\" style=\"width:100%;margin-bottom:8px;\"/>"));
+                            images.push("<img class=\"chapter-page\" src=\"".concat(fullSrc, "\" alt=\"\" />"));
                         });
                         return [2 /*return*/, images.join('\n')];
                 }

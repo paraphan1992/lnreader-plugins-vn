@@ -47,7 +47,7 @@ var TruyenSS = /** @class */ (function () {
         this.id = 'truyenss.com';
         this.name = 'TruyenSS';
         this.icon = 'src/vi/truyenss/icon.png';
-        this.version = '1.1.0';
+        this.version = '1.1.1';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -319,6 +319,20 @@ var TruyenSS = /** @class */ (function () {
     TruyenSS.prototype.extractChapterBody = function ($) {
         var _a, _b;
         $('script, style').remove();
+        $('img').each(function (_, el) {
+            var node = $(el);
+            var src = node.attr('data-src') ||
+                node.attr('data-original') ||
+                node.attr('data-lazy-src') ||
+                node.attr('src') ||
+                '';
+            if (!src || src.startsWith('data:'))
+                return;
+            node.attr('src', src.startsWith('//') ? "https:".concat(src) : src);
+            node.removeAttr('srcset');
+            node.removeAttr('width');
+            node.removeAttr('height');
+        });
         var best = '';
         var bestP = 0;
         $('div').each(function (_, el) {

@@ -45,7 +45,7 @@ var MeTruyenCv = /** @class */ (function () {
         this.id = 'metruyencv';
         this.name = 'Mê Truyện Chữ (Metruyencv)';
         this.icon = 'src/vi/metruyencv/icon.png';
-        this.version = '2.1.0';
+        this.version = '2.1.1';
         this.pluginSettings = {
             site: {
                 value: 'https://www.metruyencv.org',
@@ -219,6 +219,20 @@ var MeTruyenCv = /** @class */ (function () {
                         body = _a.sent();
                         $ = (0, cheerio_1.load)(body);
                         this.stripAds($);
+                        $('img').each(function (_, el) {
+                            var node = $(el);
+                            var src = node.attr('data-src') ||
+                                node.attr('data-original') ||
+                                node.attr('data-lazy-src') ||
+                                node.attr('src') ||
+                                '';
+                            if (!src || src.startsWith('data:'))
+                                return;
+                            node.attr('src', src.startsWith('//') ? "https:".concat(src) : src);
+                            node.removeAttr('srcset');
+                            node.removeAttr('width');
+                            node.removeAttr('height');
+                        });
                         return [2 /*return*/, ($('.chapter-content').html() ||
                                 $('.uk-article').html() ||
                                 $('#chapter-c').html() ||

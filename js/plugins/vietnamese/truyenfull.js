@@ -46,7 +46,7 @@ var TruyenFull = /** @class */ (function () {
         this.id = 'truyenfull';
         this.name = 'Truyện Full';
         this.icon = 'src/vi/truyenfull/icon.png';
-        this.version = '2.1.0';
+        this.version = '2.1.1';
         this.pluginSettings = {
             site: {
                 value: 'https://truyenfull.live',
@@ -244,6 +244,20 @@ var TruyenFull = /** @class */ (function () {
                         loadedCheerio = (0, cheerio_1.load)(body);
                         // Xóa quảng cáo và element rác
                         loadedCheerio('script, style, iframe, button, .ads, .ad, .adsbygoogle, [class*="ad-"], [id*="ad-"], [class*="colorkey"], [class*="quangcao"]').remove();
+                        loadedCheerio('img').each(function (_, el) {
+                            var node = loadedCheerio(el);
+                            var src = node.attr('data-src') ||
+                                node.attr('data-original') ||
+                                node.attr('data-lazy-src') ||
+                                node.attr('src') ||
+                                '';
+                            if (!src || src.startsWith('data:'))
+                                return;
+                            node.attr('src', src.startsWith('//') ? "https:".concat(src) : src);
+                            node.removeAttr('srcset');
+                            node.removeAttr('width');
+                            node.removeAttr('height');
+                        });
                         title = loadedCheerio('.chapter-title').html() || '';
                         chapterBody = loadedCheerio('#chapter-c').html() ||
                             loadedCheerio('.chapter-c').html() ||

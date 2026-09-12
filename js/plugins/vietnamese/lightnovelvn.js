@@ -92,7 +92,7 @@ var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.1.0';
+        this.version = '2.1.1';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -177,13 +177,20 @@ var LightNovelVN = /** @class */ (function () {
                         xml = _a.sent();
                         $ = (0, cheerio_1.load)(xml);
                         $('script, style').remove();
-                        nodes = [];
-                        $('img, image').each(function (_, el) {
+                        $('image').each(function (_, el) {
                             var node = $(el);
                             var src = node.attr('src') ||
                                 node.attr('href') ||
                                 node.attr('xlink:href') ||
                                 '';
+                            if (!src)
+                                return;
+                            node.replaceWith($('<img/>').attr('src', src).attr('alt', ''));
+                        });
+                        nodes = [];
+                        $('img').each(function (_, el) {
+                            var node = $(el);
+                            var src = node.attr('src') || '';
                             if (src && !src.startsWith('data:') && !/^https?:\/\//i.test(src)) {
                                 nodes.push({ src: src, zipPath: joinZipPath(filePath, src) });
                             }
@@ -199,7 +206,7 @@ var LightNovelVN = /** @class */ (function () {
                                         return [4 /*yield*/, imgFile.async('uint8array')];
                                     case 1:
                                         buf = _b.sent();
-                                        if (buf.byteLength > 2000000)
+                                        if (buf.byteLength > 8000000)
                                             return [2 /*return*/, "continue"];
                                         lower = item.zipPath.toLowerCase();
                                         mime = lower.endsWith('.png')

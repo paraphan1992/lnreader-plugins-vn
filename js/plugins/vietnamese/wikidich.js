@@ -152,7 +152,7 @@ var WikiDich = /** @class */ (function () {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.4.1';
+        this.version = '2.4.2';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -180,6 +180,22 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.stripAds = function ($) {
         $('script, style, iframe, .ads, [class*="ad-"], [class*="quangcao"]').remove();
+    };
+    WikiDich.prototype.unwrapLazyImages = function ($) {
+        $('img').each(function (_, el) {
+            var node = $(el);
+            var src = node.attr('data-src') ||
+                node.attr('data-original') ||
+                node.attr('data-lazy-src') ||
+                node.attr('src') ||
+                '';
+            if (!src || src.startsWith('data:'))
+                return;
+            node.attr('src', src.startsWith('//') ? "https:".concat(src) : src);
+            node.removeAttr('srcset');
+            node.removeAttr('width');
+            node.removeAttr('height');
+        });
     };
     WikiDich.prototype.parseNovels = function (loadedCheerio) {
         var _this = this;
@@ -395,6 +411,7 @@ var WikiDich = /** @class */ (function () {
                         body = _a.sent();
                         $ = (0, cheerio_1.load)(body);
                         this.stripAds($);
+                        this.unwrapLazyImages($);
                         return [2 /*return*/, ($('#bookContentBody').html() ||
                                 $('.reading-content').html() ||
                                 $('.chapter-content').html() ||
