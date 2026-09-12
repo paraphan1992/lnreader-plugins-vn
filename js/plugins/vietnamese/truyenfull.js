@@ -242,7 +242,6 @@ var TruyenFull = /** @class */ (function () {
                     case 2:
                         body = _a.sent();
                         loadedCheerio = (0, cheerio_1.load)(body);
-                        // Xóa quảng cáo và element rác
                         loadedCheerio('script, style, iframe, button, .ads, .ad, .adsbygoogle, [class*="ad-"], [id*="ad-"], [class*="colorkey"], [class*="quangcao"]').remove();
                         loadedCheerio('img').each(function (_, el) {
                             var node = loadedCheerio(el);

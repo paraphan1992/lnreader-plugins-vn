@@ -21,7 +21,7 @@ var HakoPlugin = /** @class */ (function () {
         this.id = 'ln.hako';
         this.name = 'Hako';
         this.icon = 'src/vi/hakolightnovel/icon.png';
-        this.version = '1.1.4';
+        this.version = '1.1.5';
         this.pluginSettings = {
             site: {
                 value: 'https://ln.hako.vn',
@@ -326,7 +326,7 @@ var HakoPlugin = /** @class */ (function () {
             ontext: function (data) {
                 if (this.readingTime) {
                     var chapterTime = data.split('/').map(function (x) { return Number(x); });
-                    this.tempChapter.releaseTime = new Date(chapterTime[2], chapterTime[1], chapterTime[0]).toISOString();
+                    this.tempChapter.releaseTime = new Date(chapterTime[2], chapterTime[1] - 1, chapterTime[0]).toISOString();
                     chapters.push(this.tempChapter);
                     this.readingTime = false;
                     this.tempChapter = {};

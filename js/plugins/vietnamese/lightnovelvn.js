@@ -67,10 +67,19 @@ var aes_1 = require("@libs/aes");
 var b64ToBytes = function (value) {
     return Uint8Array.from(atob(value), function (c) { return c.charCodeAt(0); });
 };
+var decodeZipSeg = function (seg) {
+    try {
+        return decodeURIComponent(seg);
+    }
+    catch (_a) {
+        return seg;
+    }
+};
 var joinZipPath = function (fromFile, href) {
     var raw = href.split('#')[0].split('?')[0];
     if (!raw)
         return fromFile;
+    raw = decodeZipSeg(raw);
     if (/^https?:\/\//i.test(raw))
         return raw;
     if (raw.startsWith('/'))
@@ -84,15 +93,27 @@ var joinZipPath = function (fromFile, href) {
         if (seg === '..')
             parts.pop();
         else
-            parts.push(seg);
+            parts.push(decodeZipSeg(seg));
     }
     return parts.join('/');
+};
+var zipLookup = function (zip, path) {
+    return zip.file(path) ||
+        zip.file(encodeURI(path)) ||
+        (function () {
+            try {
+                return zip.file(decodeURIComponent(path));
+            }
+            catch (_a) {
+                return null;
+            }
+        })();
 };
 var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.1.1';
+        this.version = '2.1.2';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -135,7 +156,9 @@ var LightNovelVN = /** @class */ (function () {
                 cover: cover
                     ? cover.startsWith('http')
                         ? cover
-                        : _this.site + cover
+                        : cover.startsWith('//')
+                            ? "https:".concat(cover)
+                            : _this.site + cover
                     : undefined,
             });
         });
@@ -165,7 +188,7 @@ var LightNovelVN = /** @class */ (function () {
     };
     LightNovelVN.prototype.htmlFromZip = function (zip, filePath) {
         return __awaiter(this, void 0, void 0, function () {
-            var file, xml, $, nodes, _loop_1, _i, nodes_1, item, html;
+            var file, xml, $, nodes, _i, nodes_1, item, imgFile, buf, lower, mime, binary, chunk, i, html;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -192,54 +215,36 @@ var LightNovelVN = /** @class */ (function () {
                             var node = $(el);
                             var src = node.attr('src') || '';
                             if (src && !src.startsWith('data:') && !/^https?:\/\//i.test(src)) {
-                                nodes.push({ src: src, zipPath: joinZipPath(filePath, src) });
+                                nodes.push({ node: node, zipPath: joinZipPath(filePath, src) });
                             }
                         });
-                        _loop_1 = function (item) {
-                            var imgFile, buf, lower, mime, binary, chunk, i, dataUri;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        imgFile = zip.file(item.zipPath);
-                                        if (!imgFile)
-                                            return [2 /*return*/, "continue"];
-                                        return [4 /*yield*/, imgFile.async('uint8array')];
-                                    case 1:
-                                        buf = _b.sent();
-                                        if (buf.byteLength > 8000000)
-                                            return [2 /*return*/, "continue"];
-                                        lower = item.zipPath.toLowerCase();
-                                        mime = lower.endsWith('.png')
-                                            ? 'image/png'
-                                            : lower.endsWith('.webp')
-                                                ? 'image/webp'
-                                                : lower.endsWith('.gif')
-                                                    ? 'image/gif'
-                                                    : 'image/jpeg';
-                                        binary = '';
-                                        chunk = 0x8000;
-                                        for (i = 0; i < buf.length; i += chunk) {
-                                            binary += String.fromCharCode.apply(String, buf.subarray(i, i + chunk));
-                                        }
-                                        dataUri = "data:".concat(mime, ";base64,").concat(btoa(binary));
-                                        $("img[src=\"".concat(item.src, "\"], image[href=\"").concat(item.src, "\"]")).each(function (_, el) {
-                                            var node = $(el);
-                                            node.attr('src', dataUri);
-                                            node.attr('href', dataUri);
-                                            node.attr('xlink:href', dataUri);
-                                        });
-                                        return [2 /*return*/];
-                                }
-                            });
-                        };
                         _i = 0, nodes_1 = nodes;
                         _a.label = 2;
                     case 2:
                         if (!(_i < nodes_1.length)) return [3 /*break*/, 5];
                         item = nodes_1[_i];
-                        return [5 /*yield**/, _loop_1(item)];
+                        imgFile = zipLookup(zip, item.zipPath);
+                        if (!imgFile)
+                            return [3 /*break*/, 4];
+                        return [4 /*yield*/, imgFile.async('uint8array')];
                     case 3:
-                        _a.sent();
+                        buf = _a.sent();
+                        if (buf.byteLength > 8000000)
+                            return [3 /*break*/, 4];
+                        lower = item.zipPath.toLowerCase();
+                        mime = lower.endsWith('.png')
+                            ? 'image/png'
+                            : lower.endsWith('.webp')
+                                ? 'image/webp'
+                                : lower.endsWith('.gif')
+                                    ? 'image/gif'
+                                    : 'image/jpeg';
+                        binary = '';
+                        chunk = 0x2000;
+                        for (i = 0; i < buf.length; i += chunk) {
+                            binary += String.fromCharCode.apply(String, buf.subarray(i, i + chunk));
+                        }
+                        item.node.attr('src', "data:".concat(mime, ";base64,").concat(btoa(binary)));
                         _a.label = 4;
                     case 4:
                         _i++;

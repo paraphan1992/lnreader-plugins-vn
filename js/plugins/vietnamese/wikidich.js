@@ -152,7 +152,7 @@ var WikiDich = /** @class */ (function () {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.4.2';
+        this.version = '2.4.3';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -326,9 +326,6 @@ var WikiDich = /** @class */ (function () {
                             }
                         };
                         pushBatch(firstBatch);
-                        if (firstBatch.length < pageSize) {
-                            return [2 /*return*/, chapters.length ? chapters : this.parseChapters((0, cheerio_1.load)(html))];
-                        }
                         start = pageSize;
                         _c.label = 5;
                     case 5:
@@ -336,9 +333,9 @@ var WikiDich = /** @class */ (function () {
                         return [4 /*yield*/, fetchPage(start, usedOffset)];
                     case 6:
                         batch = _c.sent();
-                        pushBatch(batch);
-                        if (batch.length < pageSize)
+                        if (!batch.length)
                             return [3 /*break*/, 8];
+                        pushBatch(batch);
                         _c.label = 7;
                     case 7:
                         start += pageSize;
@@ -369,7 +366,9 @@ var WikiDich = /** @class */ (function () {
                         novel.cover = cover
                             ? cover.startsWith('http')
                                 ? cover
-                                : this.site + cover
+                                : cover.startsWith('//')
+                                    ? "https:".concat(cover)
+                                    : this.site + cover
                             : undefined;
                         novel.summary = $('.book-desc-detail, .story-desc, .desc-text')
                             .text()

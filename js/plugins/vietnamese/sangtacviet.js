@@ -46,7 +46,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.2';
+        this.version = '2.1.3';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -93,7 +93,9 @@ var SangTacViet = /** @class */ (function () {
                 cover: cover
                     ? cover.startsWith('http')
                         ? cover
-                        : _this.site + cover
+                        : cover.startsWith('//')
+                            ? "https:".concat(cover)
+                            : _this.site + cover
                     : undefined,
                 path: path,
             });
@@ -159,7 +161,9 @@ var SangTacViet = /** @class */ (function () {
                         novel.cover = cover
                             ? cover.startsWith('http')
                                 ? cover
-                                : this.site + cover
+                                : cover.startsWith('//')
+                                    ? "https:".concat(cover)
+                                    : this.site + cover
                             : undefined;
                         novel.status = novelStatus_1.NovelStatus.Ongoing;
                         if (!parsed) return [3 /*break*/, 3];
