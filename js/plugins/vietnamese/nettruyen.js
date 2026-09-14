@@ -56,22 +56,26 @@ var NetTruyenManga = /** @class */ (function () {
         this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.version = '2.3.2';
+        this.version = '2.3.3';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
-                value: 'https://nettruyenseo.com',
+                value: 'https://nettruyen.com.mx',
                 label: 'Site URL',
             },
         };
         this.imageRequestInit = {
-            headers: { Referer: 'https://nettruyenseo.com/' },
+            headers: { Referer: 'https://nettruyen.com.mx/' },
         };
         this.filters = {};
     }
     Object.defineProperty(NetTruyenManga.prototype, "site", {
         get: function () {
-            var site = storage_1.storage.get('site') || 'https://nettruyenseo.com';
+            var site = storage_1.storage.get('site') || 'https://nettruyen.com.mx';
+            // nettruyenseo.com now serves the .com.mx HTML via redirect; keep one host.
+            if (/nettruyenseo\.com/i.test(site)) {
+                site = 'https://nettruyen.com.mx';
+            }
             if (this.imageRequestInit.headers) {
                 this.imageRequestInit.headers.Referer = site.endsWith('/')
                     ? site
@@ -201,7 +205,7 @@ var NetTruyenManga = /** @class */ (function () {
     };
     NetTruyenManga.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var body, loadedCheerio, images;
+            var body, loadedCheerio, images, seen;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -213,17 +217,32 @@ var NetTruyenManga = /** @class */ (function () {
                         loadedCheerio = (0, cheerio_1.load)(body);
                         loadedCheerio('script, iframe, .ads, .adsbygoogle').remove();
                         images = [];
-                        loadedCheerio('.reading-detail .page-chapter img, .reading-detail img, .page-chapter img').each(function (_, ele) {
-                            var src = loadedCheerio(ele).attr('data-src') ||
+                        seen = new Set();
+                        loadedCheerio([
+                            '.reading-detail .page-chapter img',
+                            '.reading-detail img',
+                            '.page-chapter img',
+                            'img.lozad[data-src]',
+                            'img[data-src*="khotruyen"]',
+                            'img[data-src*="/content"]',
+                        ].join(', ')).each(function (_, ele) {
+                            var raw = loadedCheerio(ele).attr('data-src') ||
                                 loadedCheerio(ele).attr('data-original') ||
-                                loadedCheerio(ele).attr('src');
-                            if (!src || src.startsWith('data:'))
+                                loadedCheerio(ele).attr('src') ||
+                                '';
+                            var src = raw.replace(/&amp;/g, '&').trim();
+                            if (!src || src.startsWith('data:') || src.startsWith('blob:'))
+                                return;
+                            if (/logo|icon|avatar|brandview|gtag/i.test(src))
                                 return;
                             var fullSrc = src.startsWith('http')
                                 ? src
                                 : src.startsWith('//')
                                     ? "https:".concat(src)
                                     : _this.site + src;
+                            if (seen.has(fullSrc))
+                                return;
+                            seen.add(fullSrc);
                             images.push("<img class=\"chapter-page\" src=\"".concat(fullSrc, "\" alt=\"\" />"));
                         });
                         return [2 /*return*/, images.join('\n')];

@@ -65,9 +65,9 @@
   {
     "id": "nettruyen-manga",
     "name": "NetTruyen",
-    "site": "https://nettruyenseo.com",
+    "site": "https://nettruyen.com.mx",
     "lang": "Tiếng Việt",
-    "version": "2.3.2",
+    "version": "2.3.3",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/nettruyen.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/nettruyen/icon.png"
   }
