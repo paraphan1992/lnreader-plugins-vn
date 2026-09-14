@@ -56,7 +56,7 @@ var NetTruyenManga = /** @class */ (function () {
         this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.version = '2.3.4';
+        this.version = '2.3.5';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -128,8 +128,7 @@ var NetTruyenManga = /** @class */ (function () {
         var _this = this;
         var chapters = [];
         var seen = new Set();
-        loadedCheerio('#nt_listchapter a, .list-chapter .chapter a, .list-chapter li a').each(function (_, ele) {
-            var _a;
+        loadedCheerio('#nt_listchapter .chapter a, .list-chapter .chapter a').each(function (_, ele) {
             var href = loadedCheerio(ele).attr('href') || '';
             var name = loadedCheerio(ele).text().replace(/\s+/g, ' ').trim();
             if (!href || !name || name === 'Xem thêm')
@@ -140,52 +139,10 @@ var NetTruyenManga = /** @class */ (function () {
             if (seen.has(path))
                 return;
             seen.add(path);
-            var num = Number((_a = path.match(/-chap-(\d+(?:\.\d+)?)/i)) === null || _a === void 0 ? void 0 : _a[1]);
-            chapters.push({
-                name: name,
-                path: path,
-                chapterNumber: Number.isFinite(num) ? num : undefined,
-            });
+            chapters.push({ name: name, path: path });
         });
-        return this.expandChapterRange(chapters);
-    };
-    /** Site HTML often ships only the latest chapter; fill 1..N from the slug. */
-    NetTruyenManga.prototype.expandChapterRange = function (chapters) {
-        var chapRe = /^(.*)\/([^/]+)-chap-(\d+)(?:-(\d+))?$/i;
-        var maxN = 0;
-        var prefix = '';
-        for (var _i = 0, chapters_1 = chapters; _i < chapters_1.length; _i++) {
-            var chapter = chapters_1[_i];
-            var match = chapter.path.match(chapRe);
-            if (!match)
-                continue;
-            prefix = "".concat(match[1], "/").concat(match[2], "-chap-");
-            var n = Number(match[3]);
-            if (n > maxN)
-                maxN = n;
-        }
-        if (!prefix || maxN < 2 || maxN > 4000) {
-            chapters.sort(function (a, b) { return (a.chapterNumber || 0) - (b.chapterNumber || 0); });
-            return chapters.map(function (chapter, index) { return (__assign(__assign({}, chapter), { chapterNumber: chapter.chapterNumber || index + 1 })); });
-        }
-        var extras = new Map(chapters.map(function (chapter) { return [chapter.path, chapter]; }));
-        var filled = [];
-        for (var i = 1; i <= maxN; i++) {
-            var path = "".concat(prefix).concat(i);
-            var existing = extras.get(path);
-            filled.push(existing || {
-                name: "Chapter ".concat(i),
-                path: path,
-                chapterNumber: i,
-            });
-            extras.delete(path);
-        }
-        for (var _a = 0, _b = extras.values(); _a < _b.length; _a++) {
-            var leftover = _b[_a];
-            filled.push(leftover);
-        }
-        filled.sort(function (a, b) { return (a.chapterNumber || 0) - (b.chapterNumber || 0); });
-        return filled;
+        chapters.reverse();
+        return chapters.map(function (chapter, index) { return (__assign(__assign({}, chapter), { chapterNumber: index + 1 })); });
     };
     NetTruyenManga.prototype.popularNovels = function (pageNo) {
         return __awaiter(this, void 0, void 0, function () {
