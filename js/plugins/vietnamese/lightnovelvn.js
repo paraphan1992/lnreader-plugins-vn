@@ -113,7 +113,7 @@ var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.1.4';
+        this.version = '2.1.5';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -283,7 +283,7 @@ var LightNovelVN = /** @class */ (function () {
     };
     LightNovelVN.prototype.loadBook = function (bookId) {
         return __awaiter(this, void 0, void 0, function () {
-            var tokenRes, tokenJson, epubRes, encrypted, _a, key, iv, data, plain, zip, opfPath, opfFile, opf, title, author, manifest, itemRe, item, attrs, id, href, spineIds, chapters, _i, spineIds_1, id, href, filePath, file, name_1, book;
+            var tokenRes, tokenJson, epubRes, encrypted, _a, key, iv, data, plain, zip, opfPath, opfFile, opf, title, author, opfFlat, manifest, itemRe, item, attrs, id, href, spineIds, chapters, _i, spineIds_1, id, href, filePath, file, name_1, book;
             var _b, _c, _d, _e, _f, _g, _h;
             return __generator(this, function (_j) {
                 switch (_j.label) {
@@ -333,16 +333,17 @@ var LightNovelVN = /** @class */ (function () {
                             'Light Novel Hub';
                         author = (_f = (_e = opf
                             .match(/<dc:creator[^>]*>([^<]+)<\/dc:creator>/i)) === null || _e === void 0 ? void 0 : _e[1]) === null || _f === void 0 ? void 0 : _f.trim();
+                        opfFlat = opf.replace(/\s+/g, ' ');
                         manifest = new Map();
                         itemRe = /<item\b([^>]+)>/gi;
-                        while ((item = itemRe.exec(opf))) {
+                        while ((item = itemRe.exec(opfFlat))) {
                             attrs = item[1];
                             id = (_g = attrs.match(/\bid="([^"]+)"/i)) === null || _g === void 0 ? void 0 : _g[1];
                             href = (_h = attrs.match(/\bhref="([^"]+)"/i)) === null || _h === void 0 ? void 0 : _h[1];
                             if (id && href)
                                 manifest.set(id, href);
                         }
-                        spineIds = __spreadArray([], opf.matchAll(/idref="([^"]+)"/gi), true).map(function (m) { return m[1]; });
+                        spineIds = __spreadArray([], opfFlat.matchAll(/idref="([^"]+)"/gi), true).map(function (m) { return m[1]; });
                         chapters = [];
                         for (_i = 0, spineIds_1 = spineIds; _i < spineIds_1.length; _i++) {
                             id = spineIds_1[_i];
