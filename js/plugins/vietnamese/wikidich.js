@@ -152,7 +152,7 @@ var WikiDich = /** @class */ (function () {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.4.4';
+        this.version = '2.4.5';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -178,6 +178,18 @@ var WikiDich = /** @class */ (function () {
             return href.replace(this.site, '');
         }
     };
+    WikiDich.prototype.absUrl = function (src) {
+        if (!src)
+            return undefined;
+        var value = src.trim();
+        if (!value || value.startsWith('data:'))
+            return undefined;
+        if (value.startsWith('http'))
+            return value;
+        if (value.startsWith('//'))
+            return "https:".concat(value);
+        return this.site + (value.startsWith('/') ? value : "/".concat(value));
+    };
     WikiDich.prototype.stripAds = function ($) {
         $('script, style, iframe, .ads, [class*="ad-"], [class*="quangcao"]').remove();
     };
@@ -200,21 +212,40 @@ var WikiDich = /** @class */ (function () {
     WikiDich.prototype.parseNovels = function (loadedCheerio) {
         var _this = this;
         var novels = [];
-        loadedCheerio('a[href*="/truyen/"]').each(function (_, ele) {
-            var href = loadedCheerio(ele).attr('href') || '';
-            var path = _this.toPath(href);
+        var push = function (path, name, cover) {
             if (!/^\/truyen\/[^/]+$/.test(path))
                 return;
-            var name = loadedCheerio(ele).text().trim() ||
-                loadedCheerio(ele).attr('title') ||
-                '';
-            if (!name ||
-                name.length < 2 ||
-                name.includes('Đăng bài') ||
-                novels.some(function (n) { return n.path === path; })) {
+            var title = name.replace(/\s+/g, ' ').trim();
+            if (!title || title.length < 2 || title.includes('Đăng bài'))
+                return;
+            var existing = novels.find(function (novel) { return novel.path === path; });
+            if (existing) {
+                if (!existing.cover && cover)
+                    existing.cover = cover;
+                if (existing.name.length < title.length)
+                    existing.name = title;
                 return;
             }
-            novels.push({ name: name, path: path });
+            novels.push({ name: title, path: path, cover: cover });
+        };
+        loadedCheerio('.book-item').each(function (_, ele) {
+            var card = loadedCheerio(ele);
+            var href = card.find('a[href*="/truyen/"]').first().attr('href') || '';
+            var name = card.find('.book-title').first().text() ||
+                card.find('a[href*="/truyen/"]').attr('data-tooltip') ||
+                '';
+            var cover = _this.absUrl(card.find('img').attr('src') || card.find('img').attr('data-src'));
+            push(_this.toPath(href), name, cover);
+        });
+        if (novels.length)
+            return novels;
+        loadedCheerio('a[href*="/truyen/"]').each(function (_, ele) {
+            var node = loadedCheerio(ele);
+            var path = _this.toPath(node.attr('href') || '');
+            var name = node.text().trim() || node.attr('title') || '';
+            var cover = _this.absUrl(node.find('img').attr('src') ||
+                node.parent().find('img').attr('src'));
+            push(path, name, cover);
         });
         return novels;
     };
@@ -350,7 +381,7 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var body, $, novel, cover, _a;
+            var body, $, novel, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + novelPath).then(function (r) { return r.text(); })];
@@ -365,14 +396,10 @@ var WikiDich = /** @class */ (function () {
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = $('.book-info img, .cover img, img[alt*="cover"]').attr('src');
-                        novel.cover = cover
-                            ? cover.startsWith('http')
-                                ? cover
-                                : cover.startsWith('//')
-                                    ? "https:".concat(cover)
-                                    : this.site + cover
-                            : undefined;
+                        novel.cover = this.absUrl($('img.materialboxed[src*="/photo/"], .book-info img, img[src*="/photo/"]')
+                            .first()
+                            .attr('src') ||
+                            $('img[src*="/photo/"]').first().attr('src'));
                         novel.summary = $('.book-desc-detail, .story-desc, .desc-text')
                             .text()
                             .trim();

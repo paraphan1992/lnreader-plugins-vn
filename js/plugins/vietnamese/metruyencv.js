@@ -45,7 +45,7 @@ var MeTruyenCv = /** @class */ (function () {
         this.id = 'metruyencv';
         this.name = 'Mê Truyện Chữ (Metruyencv)';
         this.icon = 'src/vi/metruyencv/icon.png';
-        this.version = '2.1.3';
+        this.version = '2.1.4';
         this.pluginSettings = {
             site: {
                 value: 'https://www.metruyencv.org',
@@ -70,6 +70,18 @@ var MeTruyenCv = /** @class */ (function () {
             return href.replace(this.site, '');
         }
     };
+    MeTruyenCv.prototype.absUrl = function (src) {
+        if (!src)
+            return undefined;
+        var value = src.trim();
+        if (!value || value.startsWith('data:'))
+            return undefined;
+        if (value.startsWith('http'))
+            return value;
+        if (value.startsWith('//'))
+            return "https:".concat(value);
+        return this.site + (value.startsWith('/') ? value : "/".concat(value));
+    };
     MeTruyenCv.prototype.decodeHtml = function (value) {
         return (0, cheerio_1.load)("<span>".concat(value, "</span>")).text().trim();
     };
@@ -77,7 +89,7 @@ var MeTruyenCv = /** @class */ (function () {
         $('script, style, iframe, .ads, .adsbygoogle, [class*="quangcao"]').remove();
     };
     MeTruyenCv.prototype.novelsFromJson = function (items) {
-        var _a;
+        var _a, _b, _c, _d, _e, _f, _g;
         var novels = [];
         for (var _i = 0, items_1 = items; _i < items_1.length; _i++) {
             var item = items_1[_i];
@@ -85,7 +97,9 @@ var MeTruyenCv = /** @class */ (function () {
             var href = item.link || (item.slug ? "".concat(this.site, "/truyen/").concat(item.slug, "/") : '');
             if (!name_1 || !href)
                 continue;
-            novels.push({ name: name_1, path: this.toPath(href) });
+            var cover = ((_d = (_c = (_b = item._embedded) === null || _b === void 0 ? void 0 : _b['wp:featuredmedia']) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.source_url) ||
+                ((_g = (_f = (_e = item.yoast_head_json) === null || _e === void 0 ? void 0 : _e.og_image) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.url);
+            novels.push({ name: name_1, path: this.toPath(href), cover: this.absUrl(cover) });
         }
         return novels;
     };
@@ -199,7 +213,7 @@ var MeTruyenCv = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        api = "".concat(this.site, "/wp-json/wp/v2/manga?per_page=20&page=").concat(pageNo);
+                        api = "".concat(this.site, "/wp-json/wp/v2/manga?per_page=20&page=").concat(pageNo, "&_embed=1");
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 4, , 5]);
@@ -233,20 +247,26 @@ var MeTruyenCv = /** @class */ (function () {
         var _this = this;
         var novels = [];
         loadedCheerio('a[href*="/truyen/"]').each(function (_, ele) {
-            var href = loadedCheerio(ele).attr('href') || '';
+            var node = loadedCheerio(ele);
+            var href = node.attr('href') || '';
             var path = _this.toPath(href);
             if (!/^\/truyen\/[^/]+\/$/.test(path))
                 return;
-            var name = loadedCheerio(ele).text().trim();
+            var name = node.text().trim();
             if (!name || name.length < 3 || novels.some(function (n) { return n.path === path; }))
                 return;
-            novels.push({ name: name, path: path });
+            var wrap = node.closest('div, article, li, .item');
+            var cover = _this.absUrl(node.find('img').attr('data-src') ||
+                node.find('img').attr('src') ||
+                wrap.find('img').attr('data-src') ||
+                wrap.find('img').attr('src'));
+            novels.push({ name: name, path: path, cover: cover });
         });
         return novels;
     };
     MeTruyenCv.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, body, $, novel, cover, chapters, ajax;
+            var url, body, $, novel, chapters, ajax;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -262,14 +282,15 @@ var MeTruyenCv = /** @class */ (function () {
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = $('img').first().attr('src') || $('img').first().attr('data-src');
-                        novel.cover = cover
-                            ? cover.startsWith('http')
-                                ? cover
-                                : cover.startsWith('//')
-                                    ? "https:".concat(cover)
-                                    : this.site + cover
-                            : undefined;
+                        novel.cover = this.absUrl($('meta[property="og:image"]').attr('content') ||
+                            $('.summary_image img, .manga-cover img, img.wp-post-image')
+                                .first()
+                                .attr('data-src') ||
+                            $('.summary_image img, .manga-cover img, img.wp-post-image')
+                                .first()
+                                .attr('src') ||
+                            $('img').first().attr('data-src') ||
+                            $('img').first().attr('src'));
                         novel.summary = $('.summary, .description, .entry-content, #manga-description')
                             .first()
                             .text()

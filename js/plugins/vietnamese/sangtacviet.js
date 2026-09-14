@@ -46,7 +46,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.4';
+        this.version = '2.1.5';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -54,11 +54,20 @@ var SangTacViet = /** @class */ (function () {
                 label: 'Site URL',
             },
         };
+        this.imageRequestInit = {
+            headers: { Referer: 'https://sangtacviet.com/' },
+        };
         this.filters = {};
     }
     Object.defineProperty(SangTacViet.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://sangtacviet.com';
+            var site = storage_1.storage.get('site') || 'https://sangtacviet.com';
+            if (this.imageRequestInit.headers) {
+                this.imageRequestInit.headers.Referer = site.endsWith('/')
+                    ? site
+                    : "".concat(site, "/");
+            }
+            return site;
         },
         enumerable: false,
         configurable: true
@@ -85,7 +94,9 @@ var SangTacViet = /** @class */ (function () {
                 return;
             var novelName = loadedCheerio(ele).find('.searchbooktitle, b').text().trim() ||
                 loadedCheerio(ele).text().trim();
-            var cover = loadedCheerio(ele).find('img').attr('src');
+            var cover = loadedCheerio(ele).find('img').attr('src') ||
+                loadedCheerio(ele).find('img').attr('data-src') ||
+                loadedCheerio(ele).parent().find('img').attr('src');
             if (!novelName || novels.some(function (n) { return n.path === path; }))
                 return;
             novels.push({
@@ -157,7 +168,9 @@ var SangTacViet = /** @class */ (function () {
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = $('.bookinfo img, img.cover').attr('src');
+                        cover = $('.bookinfo img, img.cover').attr('src') ||
+                            $('.bookinfo img, img.cover').attr('data-src') ||
+                            $('img[src*="bookcover"], img[src*="qdbimg"]').attr('src');
                         novel.cover = cover
                             ? cover.startsWith('http')
                                 ? cover
