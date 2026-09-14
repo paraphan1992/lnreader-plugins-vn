@@ -46,15 +46,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -98,7 +89,7 @@ var joinZipPath = function (fromFile, href) {
     return parts.join('/');
 };
 var zipLookup = function (zip, path) {
-    return zip.file(path) ||
+    var direct = zip.file(path) ||
         zip.file(encodeURI(path)) ||
         (function () {
             try {
@@ -108,12 +99,17 @@ var zipLookup = function (zip, path) {
                 return null;
             }
         })();
+    if (direct)
+        return direct;
+    var norm = path.replace(/\\/g, '/').toLowerCase();
+    var key = Object.keys(zip.files).find(function (name) { return name.replace(/\\/g, '/').toLowerCase() === norm; });
+    return key ? zip.file(key) : null;
 };
 var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.1.5';
+        this.version = '2.1.6';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -283,19 +279,19 @@ var LightNovelVN = /** @class */ (function () {
     };
     LightNovelVN.prototype.loadBook = function (bookId) {
         return __awaiter(this, void 0, void 0, function () {
-            var tokenRes, tokenJson, epubRes, encrypted, _a, key, iv, data, plain, zip, opfPath, opfFile, opf, title, author, opfFlat, manifest, itemRe, item, attrs, id, href, spineIds, chapters, _i, spineIds_1, id, href, filePath, file, name_1, book;
-            var _b, _c, _d, _e, _f, _g, _h;
-            return __generator(this, function (_j) {
-                switch (_j.label) {
+            var tokenRes, tokenJson, epubRes, encrypted, _a, key, iv, data, plain, zip, opfPath, opfFile, opf, title, author, opfFlat, manifest, itemRe, item, attrs, id, href, spineIds, spineRe, spineMatch, chapters, _i, spineIds_1, id, href, filePath, file, name_1, _b, _c, name_2, book;
+            var _d, _e, _f, _g, _h, _j, _k, _l;
+            return __generator(this, function (_m) {
+                switch (_m.label) {
                     case 0:
-                        if (((_b = this.cached) === null || _b === void 0 ? void 0 : _b.id) === bookId)
+                        if (((_d = this.cached) === null || _d === void 0 ? void 0 : _d.id) === bookId)
                             return [2 /*return*/, this.cached.book];
                         return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.readerOrigin, "/api/reader/token?book=").concat(encodeURIComponent(bookId)), { headers: this.readerHeaders() })];
                     case 1:
-                        tokenRes = _j.sent();
+                        tokenRes = _m.sent();
                         return [4 /*yield*/, tokenRes.json()];
                     case 2:
-                        tokenJson = (_j.sent());
+                        tokenJson = (_m.sent());
                         if (!tokenJson.token || !tokenJson.key) {
                             throw new Error(tokenJson.msg || 'Hub từ chối cấp token EPUB');
                         }
@@ -305,21 +301,21 @@ var LightNovelVN = /** @class */ (function () {
                                 }),
                             })];
                     case 3:
-                        epubRes = _j.sent();
+                        epubRes = _m.sent();
                         if (!epubRes.ok) {
                             throw new Error("Kh\u00F4ng t\u1EA3i \u0111\u01B0\u1EE3c EPUB (".concat(epubRes.status, ")"));
                         }
                         _a = Uint8Array.bind;
                         return [4 /*yield*/, epubRes.arrayBuffer()];
                     case 4:
-                        encrypted = new (_a.apply(Uint8Array, [void 0, _j.sent()]))();
+                        encrypted = new (_a.apply(Uint8Array, [void 0, _m.sent()]))();
                         key = b64ToBytes(tokenJson.key);
                         iv = encrypted.subarray(0, 12);
                         data = encrypted.subarray(12);
                         plain = (0, aes_1.gcm)(key, iv).decrypt(data);
                         return [4 /*yield*/, jszip_1.default.loadAsync(plain)];
                     case 5:
-                        zip = _j.sent();
+                        zip = _m.sent();
                         opfPath = Object.keys(zip.files).find(function (n) { return n.toLowerCase().endsWith('.opf'); }) || '';
                         if (!opfPath)
                             throw new Error('EPUB không có file OPF');
@@ -328,22 +324,26 @@ var LightNovelVN = /** @class */ (function () {
                             throw new Error('EPUB không đọc được file OPF');
                         return [4 /*yield*/, opfFile.async('string')];
                     case 6:
-                        opf = _j.sent();
-                        title = ((_d = (_c = opf.match(/<dc:title[^>]*>([^<]+)<\/dc:title>/i)) === null || _c === void 0 ? void 0 : _c[1]) === null || _d === void 0 ? void 0 : _d.trim()) ||
+                        opf = _m.sent();
+                        title = ((_f = (_e = opf.match(/<dc:title[^>]*>([^<]+)<\/dc:title>/i)) === null || _e === void 0 ? void 0 : _e[1]) === null || _f === void 0 ? void 0 : _f.trim()) ||
                             'Light Novel Hub';
-                        author = (_f = (_e = opf
-                            .match(/<dc:creator[^>]*>([^<]+)<\/dc:creator>/i)) === null || _e === void 0 ? void 0 : _e[1]) === null || _f === void 0 ? void 0 : _f.trim();
+                        author = (_h = (_g = opf
+                            .match(/<dc:creator[^>]*>([^<]+)<\/dc:creator>/i)) === null || _g === void 0 ? void 0 : _g[1]) === null || _h === void 0 ? void 0 : _h.trim();
                         opfFlat = opf.replace(/\s+/g, ' ');
                         manifest = new Map();
                         itemRe = /<item\b([^>]+)>/gi;
                         while ((item = itemRe.exec(opfFlat))) {
                             attrs = item[1];
-                            id = (_g = attrs.match(/\bid="([^"]+)"/i)) === null || _g === void 0 ? void 0 : _g[1];
-                            href = (_h = attrs.match(/\bhref="([^"]+)"/i)) === null || _h === void 0 ? void 0 : _h[1];
+                            id = (_j = attrs.match(/\bid="([^"]+)"/i)) === null || _j === void 0 ? void 0 : _j[1];
+                            href = (_k = attrs.match(/\bhref="([^"]+)"/i)) === null || _k === void 0 ? void 0 : _k[1];
                             if (id && href)
                                 manifest.set(id, href);
                         }
-                        spineIds = __spreadArray([], opfFlat.matchAll(/idref="([^"]+)"/gi), true).map(function (m) { return m[1]; });
+                        spineIds = [];
+                        spineRe = /idref="([^"]+)"/gi;
+                        while ((spineMatch = spineRe.exec(opfFlat))) {
+                            spineIds.push(spineMatch[1]);
+                        }
                         chapters = [];
                         for (_i = 0, spineIds_1 = spineIds; _i < spineIds_1.length; _i++) {
                             id = spineIds_1[_i];
@@ -365,6 +365,23 @@ var LightNovelVN = /** @class */ (function () {
                                 path: "/book/".concat(bookId, "/").concat(chapters.length),
                                 filePath: filePath,
                             });
+                        }
+                        if (!chapters.length) {
+                            for (_b = 0, _c = Object.keys(zip.files); _b < _c.length; _b++) {
+                                name_2 = _c[_b];
+                                if (!/\.x?html?$/i.test(name_2) || ((_l = zip.files[name_2]) === null || _l === void 0 ? void 0 : _l.dir))
+                                    continue;
+                                if (this.skipSpineId('', name_2))
+                                    continue;
+                                chapters.push({
+                                    name: decodeZipSeg(name_2.split('/').pop() || '')
+                                        .replace(/\.[^.]+$/, '')
+                                        .replace(/[-_]+/g, ' ')
+                                        .trim() || "Ph\u1EA7n ".concat(chapters.length + 1),
+                                    path: "/book/".concat(bookId, "/").concat(chapters.length),
+                                    filePath: name_2,
+                                });
+                            }
                         }
                         if (!chapters.length) {
                             throw new Error('EPUB không có chương đọc được');
