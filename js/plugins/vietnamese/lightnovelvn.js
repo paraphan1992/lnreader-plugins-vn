@@ -113,7 +113,7 @@ var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.1.2';
+        this.version = '2.1.3';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -133,34 +133,58 @@ var LightNovelVN = /** @class */ (function () {
     LightNovelVN.prototype.readerHeaders = function (extra) {
         return __assign({ Origin: this.readerOrigin, Referer: "".concat(this.readerOrigin, "/reader/") }, extra);
     };
+    LightNovelVN.prototype.absCover = function (src) {
+        if (!src)
+            return undefined;
+        var value = src.trim();
+        if (!value || value.startsWith('data:'))
+            return undefined;
+        if (value.includes('_next/image')) {
+            try {
+                var parsed = new URL(value, this.site);
+                var inner = parsed.searchParams.get('url');
+                if (inner)
+                    value = inner;
+            }
+            catch (_a) {
+                // keep original
+            }
+        }
+        if (value.startsWith('http'))
+            return value;
+        if (value.startsWith('//'))
+            return "https:".concat(value);
+        return this.site + (value.startsWith('/') ? value : "/".concat(value));
+    };
     LightNovelVN.prototype.collectBooks = function (loadedCheerio) {
         var _this = this;
         var novels = [];
         loadedCheerio('a[href*="reader?book="]').each(function (_, ele) {
             var _a, _b, _c;
-            var href = loadedCheerio(ele).attr('href') || '';
+            var node = loadedCheerio(ele);
+            var href = node.attr('href') || '';
             var book = (_a = href.match(/book=([a-f0-9-]+)/i)) === null || _a === void 0 ? void 0 : _a[1];
             if (!book)
                 return;
             var path = "/book/".concat(book);
-            var name = ((_b = loadedCheerio(ele).attr('title')) === null || _b === void 0 ? void 0 : _b.trim()) ||
-                loadedCheerio(ele).text().trim() ||
-                ((_c = loadedCheerio(ele).find('img').attr('alt')) === null || _c === void 0 ? void 0 : _c.trim()) ||
-                book;
             if (novels.some(function (n) { return n.path === path; }))
                 return;
-            var cover = loadedCheerio(ele).find('img').attr('src');
-            novels.push({
-                name: name,
-                path: path,
-                cover: cover
-                    ? cover.startsWith('http')
-                        ? cover
-                        : cover.startsWith('//')
-                            ? "https:".concat(cover)
-                            : _this.site + cover
-                    : undefined,
-            });
+            var card = node.parent();
+            var name = ((_b = node.attr('title')) === null || _b === void 0 ? void 0 : _b.trim()) ||
+                ((_c = node.find('img').attr('alt')) === null || _c === void 0 ? void 0 : _c.trim()) ||
+                '';
+            if (!name || name === 'Đọc sách') {
+                name =
+                    card.find('p.font-bold, p.line-clamp-2, h2, h3').first().text().trim() ||
+                        card.parent().find('p.font-bold, p.line-clamp-2').first().text().trim() ||
+                        '';
+            }
+            if (!name || name === 'Đọc sách')
+                name = book;
+            var cover = _this.absCover(card.find('img').attr('src') ||
+                card.parent().find('img').attr('src') ||
+                node.find('img').attr('src'));
+            novels.push({ name: name, path: path, cover: cover });
         });
         return novels;
     };
@@ -375,7 +399,7 @@ var LightNovelVN = /** @class */ (function () {
                         book = _a.sent();
                         return [2 /*return*/, {
                                 path: "/book/".concat(bookId),
-                                name: (card === null || card === void 0 ? void 0 : card.name) || book.title,
+                                name: (card === null || card === void 0 ? void 0 : card.name) && card.name !== 'Đọc sách' ? card.name : book.title,
                                 cover: card === null || card === void 0 ? void 0 : card.cover,
                                 author: book.author,
                                 chapters: book.chapters.map(function (ch, i) { return ({

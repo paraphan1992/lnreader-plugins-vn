@@ -4,7 +4,7 @@
     "name": "Light Novel VN",
     "site": "https://hub.ranobe.vn",
     "lang": "Tiếng Việt",
-    "version": "2.1.2",
+    "version": "2.1.3",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/lightnovelvn.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/lightnovelvn/icon.png"
   },
