@@ -45,7 +45,7 @@ var MeTruyenCv = /** @class */ (function () {
         this.id = 'metruyencv';
         this.name = 'Mê Truyện Chữ (Metruyencv)';
         this.icon = 'src/vi/metruyencv/icon.png';
-        this.version = '2.1.4';
+        this.version = '2.1.5';
         this.pluginSettings = {
             site: {
                 value: 'https://www.metruyencv.org',
@@ -89,7 +89,7 @@ var MeTruyenCv = /** @class */ (function () {
         $('script, style, iframe, .ads, .adsbygoogle, [class*="quangcao"]').remove();
     };
     MeTruyenCv.prototype.novelsFromJson = function (items) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         var novels = [];
         for (var _i = 0, items_1 = items; _i < items_1.length; _i++) {
             var item = items_1[_i];
@@ -97,8 +97,10 @@ var MeTruyenCv = /** @class */ (function () {
             var href = item.link || (item.slug ? "".concat(this.site, "/truyen/").concat(item.slug, "/") : '');
             if (!name_1 || !href)
                 continue;
-            var cover = ((_d = (_c = (_b = item._embedded) === null || _b === void 0 ? void 0 : _b['wp:featuredmedia']) === null || _c === void 0 ? void 0 : _c[0]) === null || _d === void 0 ? void 0 : _d.source_url) ||
-                ((_g = (_f = (_e = item.yoast_head_json) === null || _e === void 0 ? void 0 : _e.og_image) === null || _f === void 0 ? void 0 : _f[0]) === null || _g === void 0 ? void 0 : _g.url);
+            var media = (_c = (_b = item._embedded) === null || _b === void 0 ? void 0 : _b['wp:featuredmedia']) === null || _c === void 0 ? void 0 : _c[0];
+            var cover = (media === null || media === void 0 ? void 0 : media.source_url) ||
+                ((_f = (_e = (_d = media === null || media === void 0 ? void 0 : media.media_details) === null || _d === void 0 ? void 0 : _d.sizes) === null || _e === void 0 ? void 0 : _e.full) === null || _f === void 0 ? void 0 : _f.source_url) ||
+                ((_j = (_h = (_g = item.yoast_head_json) === null || _g === void 0 ? void 0 : _g.og_image) === null || _h === void 0 ? void 0 : _h[0]) === null || _j === void 0 ? void 0 : _j.url);
             novels.push({ name: name_1, path: this.toPath(href), cover: this.absUrl(cover) });
         }
         return novels;
@@ -209,39 +211,56 @@ var MeTruyenCv = /** @class */ (function () {
     };
     MeTruyenCv.prototype.popularNovels = function (pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var api, result, items, _a, html;
+            var api, result, items, novels, html_1, _a, html;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         api = "".concat(this.site, "/wp-json/wp/v2/manga?per_page=20&page=").concat(pageNo, "&_embed=1");
                         _b.label = 1;
                     case 1:
-                        _b.trys.push([1, 4, , 5]);
+                        _b.trys.push([1, 7, , 8]);
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(api)];
                     case 2:
                         result = _b.sent();
                         return [4 /*yield*/, result.json()];
                     case 3:
                         items = _b.sent();
-                        if (Array.isArray(items)) {
-                            return [2 /*return*/, this.novelsFromJson(items)];
-                        }
-                        return [3 /*break*/, 5];
+                        if (!Array.isArray(items)) return [3 /*break*/, 6];
+                        novels = this.novelsFromJson(items);
+                        if (!(pageNo === 1 && novels.some(function (n) { return !n.cover; }))) return [3 /*break*/, 5];
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/truyen/"))
+                                .then(function (r) { return r.text(); })
+                                .catch(function () { return ''; })];
                     case 4:
+                        html_1 = _b.sent();
+                        if (html_1)
+                            this.mergeCovers(novels, this.parseListing((0, cheerio_1.load)(html_1)));
+                        _b.label = 5;
+                    case 5: return [2 /*return*/, novels];
+                    case 6: return [3 /*break*/, 8];
+                    case 7:
                         _a = _b.sent();
                         if (pageNo > 1)
                             return [2 /*return*/, []];
-                        return [3 /*break*/, 5];
-                    case 5:
+                        return [3 /*break*/, 8];
+                    case 8:
                         if (pageNo > 1)
                             return [2 /*return*/, []];
                         return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/truyen/")).then(function (r) { return r.text(); })];
-                    case 6:
+                    case 9:
                         html = _b.sent();
                         return [2 /*return*/, this.parseListing((0, cheerio_1.load)(html))];
                 }
             });
         });
+    };
+    MeTruyenCv.prototype.mergeCovers = function (novels, listed) {
+        var byPath = new Map(listed.map(function (item) { return [item.path, item.cover]; }));
+        for (var _i = 0, novels_1 = novels; _i < novels_1.length; _i++) {
+            var novel = novels_1[_i];
+            if (!novel.cover)
+                novel.cover = byPath.get(novel.path);
+        }
     };
     MeTruyenCv.prototype.parseListing = function (loadedCheerio) {
         var _this = this;
@@ -376,7 +395,7 @@ var MeTruyenCv = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        api = "".concat(this.site, "/wp-json/wp/v2/manga?search=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo, "&per_page=20");
+                        api = "".concat(this.site, "/wp-json/wp/v2/manga?search=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo, "&per_page=20&_embed=1");
                         _b.label = 1;
                     case 1:
                         _b.trys.push([1, 4, , 5]);

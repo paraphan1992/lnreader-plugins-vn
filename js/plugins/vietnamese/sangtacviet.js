@@ -46,7 +46,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.7';
+        this.version = '2.1.8';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -234,15 +234,17 @@ var SangTacViet = /** @class */ (function () {
     SangTacViet.prototype.readChapterAjax = function (chapterPath, pageHtml) {
         return __awaiter(this, void 0, void 0, function () {
             var ids, gac, ac, cookie, url, headers, _loop_1, attempt, state_1;
-            var _a, _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var _a, _b, _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
                         ids = this.chapterIds(chapterPath);
                         if (!ids)
                             return [2 /*return*/, ''];
-                        gac = (_a = pageHtml.match(/document\.cookie="_gac=([^";]+)/)) === null || _a === void 0 ? void 0 : _a[1];
-                        ac = (_b = pageHtml.match(/document\.cookie="_ac=([^";]+)/)) === null || _b === void 0 ? void 0 : _b[1];
+                        gac = ((_a = pageHtml.match(/document\.cookie\s*=\s*["']_gac=([^"';]+)/)) === null || _a === void 0 ? void 0 : _a[1]) ||
+                            ((_b = pageHtml.match(/_gac=([^"';\s]+)/)) === null || _b === void 0 ? void 0 : _b[1]);
+                        ac = ((_c = pageHtml.match(/document\.cookie\s*=\s*["']_ac=([^"';]+)/)) === null || _c === void 0 ? void 0 : _c[1]) ||
+                            ((_d = pageHtml.match(/_ac=([^"';\s]+)/)) === null || _d === void 0 ? void 0 : _d[1]);
                         cookie = [
                             gac ? "_gac=".concat(gac) : '',
                             ac ? "_ac=".concat(ac) : '',
@@ -260,15 +262,15 @@ var SangTacViet = /** @class */ (function () {
                             headers.Cookie = cookie;
                         _loop_1 = function (attempt) {
                             var raw, payload, jsonText;
-                            return __generator(this, function (_d) {
-                                switch (_d.label) {
+                            return __generator(this, function (_f) {
+                                switch (_f.label) {
                                     case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(url, {
                                             method: 'POST',
                                             headers: headers,
                                             body: '',
                                         }).then(function (r) { return r.text(); })];
                                     case 1:
-                                        raw = _d.sent();
+                                        raw = _f.sent();
                                         payload = {};
                                         try {
                                             jsonText = raw.includes('{"')
@@ -276,7 +278,7 @@ var SangTacViet = /** @class */ (function () {
                                                 : raw;
                                             payload = JSON.parse(jsonText);
                                         }
-                                        catch (_e) {
+                                        catch (_g) {
                                             payload = {};
                                         }
                                         if (!(String(payload.code) === '7')) return [3 /*break*/, 3];
@@ -284,7 +286,7 @@ var SangTacViet = /** @class */ (function () {
                                                 return setTimeout(resolve, Number(payload.time) || 200);
                                             })];
                                     case 2:
-                                        _d.sent();
+                                        _f.sent();
                                         return [2 /*return*/, "continue"];
                                     case 3:
                                         if (String(payload.code) === '0' && typeof payload.data === 'string') {
@@ -295,17 +297,17 @@ var SangTacViet = /** @class */ (function () {
                             });
                         };
                         attempt = 0;
-                        _c.label = 1;
+                        _e.label = 1;
                     case 1:
                         if (!(attempt < 4)) return [3 /*break*/, 4];
                         return [5 /*yield**/, _loop_1(attempt)];
                     case 2:
-                        state_1 = _c.sent();
+                        state_1 = _e.sent();
                         if (typeof state_1 === "object")
                             return [2 /*return*/, state_1.value];
                         if (state_1 === "break")
                             return [3 /*break*/, 4];
-                        _c.label = 3;
+                        _e.label = 3;
                     case 3:
                         attempt++;
                         return [3 /*break*/, 1];
