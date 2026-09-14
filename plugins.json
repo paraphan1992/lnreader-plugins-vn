@@ -4,7 +4,7 @@
     "name": "Light Novel VN",
     "site": "https://hub.ranobe.vn",
     "lang": "Tiếng Việt",
-    "version": "2.1.3",
+    "version": "2.1.4",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/lightnovelvn.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/lightnovelvn/icon.png"
   },
@@ -13,7 +13,7 @@
     "name": "Hako",
     "site": "https://ln.hako.vn",
     "lang": "Tiếng Việt",
-    "version": "1.1.5",
+    "version": "1.1.6",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/LNHako.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/hakolightnovel/icon.png"
   },
@@ -31,7 +31,7 @@
     "name": "Sáng Tác Việt",
     "site": "https://sangtacviet.com",
     "lang": "Tiếng Việt",
-    "version": "2.1.6",
+    "version": "2.1.7",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/sangtacviet.js",
     "iconUrl": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/public/static/src/vi/sangtacviet/icon.png"
   },
@@ -40,7 +40,7 @@
     "name": "Truyện Full",
     "site": "https://truyenfull.live",
     "lang": "Tiếng Việt",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/truyenfull.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/truyenfull/icon.png"
   },
@@ -49,7 +49,7 @@
     "name": "TruyenSS",
     "site": "https://truyenss.com",
     "lang": "Tiếng Việt",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/truyenss.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/truyenss/icon.png"
   },

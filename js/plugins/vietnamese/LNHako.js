@@ -21,12 +21,15 @@ var HakoPlugin = /** @class */ (function () {
         this.id = 'ln.hako';
         this.name = 'Hako';
         this.icon = 'src/vi/hakolightnovel/icon.png';
-        this.version = '1.1.5';
+        this.version = '1.1.6';
         this.pluginSettings = {
             site: {
                 value: 'https://ln.hako.vn',
                 label: 'Site URL',
             },
+        };
+        this.imageRequestInit = {
+            headers: { Referer: 'https://ln.hako.vn/' },
         };
         this.imageRequestInit = {
             headers: {
@@ -108,7 +111,13 @@ var HakoPlugin = /** @class */ (function () {
     }
     Object.defineProperty(HakoPlugin.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://ln.hako.vn';
+            var site = storage_1.storage.get('site') || 'https://ln.hako.vn';
+            if (this.imageRequestInit.headers) {
+                this.imageRequestInit.headers.Referer = site.endsWith('/')
+                    ? site
+                    : "".concat(site, "/");
+            }
+            return site;
         },
         enumerable: false,
         configurable: true
@@ -123,7 +132,7 @@ var HakoPlugin = /** @class */ (function () {
             var isParsingNovel = false;
             var parser = new htmlparser2_1.Parser({
                 onopentag: function (name, attribs) {
-                    var _a, _b, _c;
+                    var _a, _b, _c, _d, _e;
                     if ((_a = attribs['class']) === null || _a === void 0 ? void 0 : _a.includes('thumb-item-flow')) {
                         isParsingNovel = true;
                     }
@@ -132,7 +141,9 @@ var HakoPlugin = /** @class */ (function () {
                             isGettingUrl = true;
                         }
                         if ((_c = attribs['class']) === null || _c === void 0 ? void 0 : _c.includes('img-in-ratio')) {
-                            tempNovel.cover = attribs['data-bg'];
+                            tempNovel.cover =
+                                attribs['data-bg'] ||
+                                    ((_e = (_d = attribs['style']) === null || _d === void 0 ? void 0 : _d.match(/url\((['"]?)(https?:[^'")]+)\1\)/)) === null || _e === void 0 ? void 0 : _e[2]);
                         }
                         if (isGettingUrl && name === 'a') {
                             tempNovel.name = attribs['title'];

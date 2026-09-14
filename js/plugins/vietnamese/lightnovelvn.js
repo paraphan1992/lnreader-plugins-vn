@@ -113,7 +113,7 @@ var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.1.3';
+        this.version = '2.1.4';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -212,11 +212,11 @@ var LightNovelVN = /** @class */ (function () {
     };
     LightNovelVN.prototype.htmlFromZip = function (zip, filePath) {
         return __awaiter(this, void 0, void 0, function () {
-            var file, xml, $, nodes, _i, nodes_1, item, imgFile, buf, lower, mime, binary, chunk, i, html;
+            var file, xml, $, nodes, _i, nodes_1, item, imgFile, buf, lower, mime, binary, chunk, i, slice, html;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        file = zip.file(filePath);
+                        file = zipLookup(zip, filePath);
                         if (!file)
                             return [2 /*return*/, ''];
                         return [4 /*yield*/, file.async('string')];
@@ -264,9 +264,10 @@ var LightNovelVN = /** @class */ (function () {
                                     ? 'image/gif'
                                     : 'image/jpeg';
                         binary = '';
-                        chunk = 0x2000;
+                        chunk = 256;
                         for (i = 0; i < buf.length; i += chunk) {
-                            binary += String.fromCharCode.apply(String, buf.subarray(i, i + chunk));
+                            slice = buf.subarray(i, i + chunk);
+                            binary += String.fromCharCode.apply(null, Array.from(slice));
                         }
                         item.node.attr('src', "data:".concat(mime, ";base64,").concat(btoa(binary)));
                         _a.label = 4;
@@ -282,19 +283,19 @@ var LightNovelVN = /** @class */ (function () {
     };
     LightNovelVN.prototype.loadBook = function (bookId) {
         return __awaiter(this, void 0, void 0, function () {
-            var tokenRes, tokenJson, epubRes, encrypted, _a, key, iv, data, plain, zip, opfPath, opf, title, author, manifest, itemRe, item, attrs, id, href, spineIds, chapters, _i, spineIds_1, id, href, filePath, file, xml, textLen, name_1, book;
-            var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
-            return __generator(this, function (_m) {
-                switch (_m.label) {
+            var tokenRes, tokenJson, epubRes, encrypted, _a, key, iv, data, plain, zip, opfPath, opfFile, opf, title, author, manifest, itemRe, item, attrs, id, href, spineIds, chapters, _i, spineIds_1, id, href, filePath, file, name_1, book;
+            var _b, _c, _d, _e, _f, _g, _h;
+            return __generator(this, function (_j) {
+                switch (_j.label) {
                     case 0:
                         if (((_b = this.cached) === null || _b === void 0 ? void 0 : _b.id) === bookId)
                             return [2 /*return*/, this.cached.book];
                         return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.readerOrigin, "/api/reader/token?book=").concat(encodeURIComponent(bookId)), { headers: this.readerHeaders() })];
                     case 1:
-                        tokenRes = _m.sent();
+                        tokenRes = _j.sent();
                         return [4 /*yield*/, tokenRes.json()];
                     case 2:
-                        tokenJson = (_m.sent());
+                        tokenJson = (_j.sent());
                         if (!tokenJson.token || !tokenJson.key) {
                             throw new Error(tokenJson.msg || 'Hub từ chối cấp token EPUB');
                         }
@@ -304,27 +305,30 @@ var LightNovelVN = /** @class */ (function () {
                                 }),
                             })];
                     case 3:
-                        epubRes = _m.sent();
+                        epubRes = _j.sent();
                         if (!epubRes.ok) {
                             throw new Error("Kh\u00F4ng t\u1EA3i \u0111\u01B0\u1EE3c EPUB (".concat(epubRes.status, ")"));
                         }
                         _a = Uint8Array.bind;
                         return [4 /*yield*/, epubRes.arrayBuffer()];
                     case 4:
-                        encrypted = new (_a.apply(Uint8Array, [void 0, _m.sent()]))();
+                        encrypted = new (_a.apply(Uint8Array, [void 0, _j.sent()]))();
                         key = b64ToBytes(tokenJson.key);
                         iv = encrypted.subarray(0, 12);
                         data = encrypted.subarray(12);
                         plain = (0, aes_1.gcm)(key, iv).decrypt(data);
                         return [4 /*yield*/, jszip_1.default.loadAsync(plain)];
                     case 5:
-                        zip = _m.sent();
+                        zip = _j.sent();
                         opfPath = Object.keys(zip.files).find(function (n) { return n.toLowerCase().endsWith('.opf'); }) || '';
                         if (!opfPath)
                             throw new Error('EPUB không có file OPF');
-                        return [4 /*yield*/, zip.file(opfPath).async('string')];
+                        opfFile = zipLookup(zip, opfPath);
+                        if (!opfFile)
+                            throw new Error('EPUB không đọc được file OPF');
+                        return [4 /*yield*/, opfFile.async('string')];
                     case 6:
-                        opf = _m.sent();
+                        opf = _j.sent();
                         title = ((_d = (_c = opf.match(/<dc:title[^>]*>([^<]+)<\/dc:title>/i)) === null || _c === void 0 ? void 0 : _c[1]) === null || _d === void 0 ? void 0 : _d.trim()) ||
                             'Light Novel Hub';
                         author = (_f = (_e = opf
@@ -340,39 +344,27 @@ var LightNovelVN = /** @class */ (function () {
                         }
                         spineIds = __spreadArray([], opf.matchAll(/idref="([^"]+)"/gi), true).map(function (m) { return m[1]; });
                         chapters = [];
-                        _i = 0, spineIds_1 = spineIds;
-                        _m.label = 7;
-                    case 7:
-                        if (!(_i < spineIds_1.length)) return [3 /*break*/, 10];
-                        id = spineIds_1[_i];
-                        href = manifest.get(id);
-                        if (!href)
-                            return [3 /*break*/, 9];
-                        if (this.skipSpineId(id, href))
-                            return [3 /*break*/, 9];
-                        filePath = joinZipPath(opfPath, href);
-                        file = zip.file(filePath);
-                        if (!file)
-                            return [3 /*break*/, 9];
-                        return [4 /*yield*/, file.async('string')];
-                    case 8:
-                        xml = _m.sent();
-                        textLen = xml.replace(/<[^>]+>/g, '').trim().length;
-                        if (textLen < 20 && !/<img|<image /i.test(xml))
-                            return [3 /*break*/, 9];
-                        name_1 = ((_k = (_j = xml.match(/<h1[^>]*>([^<]+)<\/h1>/i)) === null || _j === void 0 ? void 0 : _j[1]) === null || _k === void 0 ? void 0 : _k.trim()) ||
-                            ((_l = filePath.split('/').pop()) === null || _l === void 0 ? void 0 : _l.replace(/\.[^.]+$/, '')) ||
-                            "Ph\u1EA7n ".concat(chapters.length + 1);
-                        chapters.push({
-                            name: name_1,
-                            path: "/book/".concat(bookId, "/").concat(chapters.length),
-                            filePath: filePath,
-                        });
-                        _m.label = 9;
-                    case 9:
-                        _i++;
-                        return [3 /*break*/, 7];
-                    case 10:
+                        for (_i = 0, spineIds_1 = spineIds; _i < spineIds_1.length; _i++) {
+                            id = spineIds_1[_i];
+                            href = manifest.get(id);
+                            if (!href)
+                                continue;
+                            if (this.skipSpineId(id, href))
+                                continue;
+                            filePath = joinZipPath(opfPath, href);
+                            file = zipLookup(zip, filePath);
+                            if (!file)
+                                continue;
+                            name_1 = decodeZipSeg(filePath.split('/').pop() || '')
+                                .replace(/\.[^.]+$/, '')
+                                .replace(/[-_]+/g, ' ')
+                                .trim() || "Ph\u1EA7n ".concat(chapters.length + 1);
+                            chapters.push({
+                                name: name_1,
+                                path: "/book/".concat(bookId, "/").concat(chapters.length),
+                                filePath: filePath,
+                            });
+                        }
                         if (!chapters.length) {
                             throw new Error('EPUB không có chương đọc được');
                         }
@@ -385,7 +377,7 @@ var LightNovelVN = /** @class */ (function () {
     };
     LightNovelVN.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var bookId, listing, card, book;
+            var bookId, listing, card, book, err_1, msg;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -394,8 +386,11 @@ var LightNovelVN = /** @class */ (function () {
                     case 1:
                         listing = _a.sent();
                         card = listing.find(function (n) { return n.path === "/book/".concat(bookId); });
-                        return [4 /*yield*/, this.loadBook(bookId)];
+                        _a.label = 2;
                     case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, this.loadBook(bookId)];
+                    case 3:
                         book = _a.sent();
                         return [2 /*return*/, {
                                 path: "/book/".concat(bookId),
@@ -409,27 +404,59 @@ var LightNovelVN = /** @class */ (function () {
                                 }); }),
                                 totalPages: 1,
                             }];
+                    case 4:
+                        err_1 = _a.sent();
+                        msg = err_1 instanceof Error ? err_1.message : String(err_1);
+                        return [2 /*return*/, {
+                                path: "/book/".concat(bookId),
+                                name: (card === null || card === void 0 ? void 0 : card.name) || 'Light Novel Hub',
+                                cover: card === null || card === void 0 ? void 0 : card.cover,
+                                summary: msg,
+                                chapters: [
+                                    {
+                                        name: 'Không mở được EPUB — bấm để xem lỗi',
+                                        path: "/book/".concat(bookId, "/err"),
+                                        chapterNumber: 1,
+                                    },
+                                ],
+                                totalPages: 1,
+                            }];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
     };
-    LightNovelVN.prototype.parsePage = function (_novelPath, _page) {
+    LightNovelVN.prototype.parsePage = function (novelPath, _page) {
         return __awaiter(this, void 0, void 0, function () {
+            var novel;
             return __generator(this, function (_a) {
-                return [2 /*return*/, { chapters: [] }];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.parseNovel(novelPath)];
+                    case 1:
+                        novel = _a.sent();
+                        return [2 /*return*/, { chapters: novel.chapters || [] }];
+                }
             });
         });
     };
     LightNovelVN.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var parts, bookId, index, book, chapter, html;
+            var parts, bookId, indexToken, index, book, chapter, html;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         parts = chapterPath.split('/').filter(Boolean);
                         bookId = parts[1];
-                        index = Number(parts[2]);
-                        if (!bookId || Number.isNaN(index)) {
+                        indexToken = parts[2];
+                        if (!bookId) {
+                            throw new Error('Đường dẫn chương Hub không hợp lệ');
+                        }
+                        if (indexToken === 'err') {
+                            return [2 /*return*/, ('<p>Không giải được EPUB trên máy (file lớn / mạng chậm).</p>' +
+                                    '<p>Kéo trang truyện xuống làm mới, hoặc mở WebView trên nguồn Light Novel VN.</p>')];
+                        }
+                        index = Number(indexToken);
+                        if (Number.isNaN(index)) {
                             throw new Error('Đường dẫn chương Hub không hợp lệ');
                         }
                         return [4 /*yield*/, this.loadBook(bookId)];

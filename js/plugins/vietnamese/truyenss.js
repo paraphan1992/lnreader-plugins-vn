@@ -47,7 +47,7 @@ var TruyenSS = /** @class */ (function () {
         this.id = 'truyenss.com';
         this.name = 'TruyenSS';
         this.icon = 'src/vi/truyenss/icon.png';
-        this.version = '1.1.1';
+        this.version = '1.1.2';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -193,27 +193,31 @@ var TruyenSS = /** @class */ (function () {
     };
     TruyenSS.prototype.popularNovels = function (pageNo_1, _a) {
         return __awaiter(this, arguments, void 0, function (pageNo, _b) {
-            var body_1, fromHome, genre, url, body, fromPage;
+            var fromLayout, body_1, genre, url, body, fromPage;
             var _c;
             var showLatestNovels = _b.showLatestNovels, filters = _b.filters;
             return __generator(this, function (_d) {
                 switch (_d.label) {
                     case 0:
-                        if (!showLatestNovels) return [3 /*break*/, 2];
+                        if (!showLatestNovels) return [3 /*break*/, 3];
                         if (pageNo > 1)
                             return [2 /*return*/, []];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + '/').then(function (r) { return r.text(); })];
+                        return [4 /*yield*/, this.listFromLayout('1')];
                     case 1:
-                        body_1 = _d.sent();
-                        fromHome = this.collectTruyenLinks((0, cheerio_1.load)(body_1), "".concat(this.site, "/"));
-                        return [2 /*return*/, fromHome.length ? fromHome : this.listFromLayout('1')];
+                        fromLayout = _d.sent();
+                        if (fromLayout.length)
+                            return [2 /*return*/, fromLayout];
+                        return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + '/').then(function (r) { return r.text(); })];
                     case 2:
+                        body_1 = _d.sent();
+                        return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body_1), "".concat(this.site, "/"))];
+                    case 3:
                         genre = (_c = filters === null || filters === void 0 ? void 0 : filters.genre.value) !== null && _c !== void 0 ? _c : 'tien-hiep';
                         url = pageNo <= 1
                             ? "".concat(this.site, "/").concat(genre)
                             : "".concat(this.site, "/").concat(genre, "?page=").concat(pageNo);
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
-                    case 3:
+                    case 4:
                         body = _d.sent();
                         fromPage = this.collectTruyenLinks((0, cheerio_1.load)(body), url);
                         if (fromPage.length)

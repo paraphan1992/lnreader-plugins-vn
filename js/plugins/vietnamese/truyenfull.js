@@ -46,7 +46,7 @@ var TruyenFull = /** @class */ (function () {
         this.id = 'truyenfull';
         this.name = 'Truyện Full';
         this.icon = 'src/vi/truyenfull/icon.png';
-        this.version = '2.1.1';
+        this.version = '2.1.2';
         this.pluginSettings = {
             site: {
                 value: 'https://truyenfull.live',
@@ -88,11 +88,11 @@ var TruyenFull = /** @class */ (function () {
         var novels = [];
         loadedCheerio('.list-truyen .row').each(function (idx, ele) {
             var novelName = loadedCheerio(ele).find('h3.truyen-title > a').text().trim();
-            var novelCover = loadedCheerio(ele)
-                .find("div[data-classname='cover']")
-                .attr('data-image') ||
+            var novelCover = loadedCheerio(ele).find("div[data-classname='cover']").attr('data-image') ||
                 loadedCheerio(ele).find('.lazyimg').attr('data-image') ||
-                loadedCheerio(ele).find('.lazyimg').attr('data-desk-image');
+                loadedCheerio(ele).find('.lazyimg').attr('data-desk-image') ||
+                loadedCheerio(ele).find('img').attr('data-src') ||
+                loadedCheerio(ele).find('img').attr('src');
             var novelUrl = loadedCheerio(ele)
                 .find('h3.truyen-title > a')
                 .attr('href');

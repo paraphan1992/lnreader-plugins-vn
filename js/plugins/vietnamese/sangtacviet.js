@@ -46,7 +46,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.6';
+        this.version = '2.1.7';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -152,7 +152,7 @@ var SangTacViet = /** @class */ (function () {
     };
     SangTacViet.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var parsed, body, $, novel, cover, host, bookId, tocUrl, toc;
+            var parsed, body, $, novel, infoThumb, infoMatch, cover, host, bookId, tocUrl, toc;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -168,7 +168,19 @@ var SangTacViet = /** @class */ (function () {
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = $('meta[property="og:image"]').attr('content') ||
+                        infoThumb = '';
+                        infoMatch = body.match(/bookinfo\s*=\s*(\{[\s\S]*?\});/);
+                        if (infoMatch) {
+                            try {
+                                infoThumb = String(JSON.parse(infoMatch[1]).thumb || '');
+                            }
+                            catch (_b) {
+                                infoThumb = '';
+                            }
+                        }
+                        cover = infoThumb ||
+                            $('meta[property="og:image"]').attr('content') ||
+                            $('#thumb-prop').attr('data-src') ||
                             $('.bookinfo img, img.cover').attr('src') ||
                             $('.bookinfo img, img.cover').attr('data-src') ||
                             $('img[src*="bookcover"], img[src*="qdbimg"]').attr('src');
