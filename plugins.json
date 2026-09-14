@@ -31,7 +31,7 @@
     "name": "Sáng Tác Việt",
     "site": "https://sangtacviet.com",
     "lang": "Tiếng Việt",
-    "version": "2.1.5",
+    "version": "2.1.6",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/sangtacviet.js",
     "iconUrl": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/public/static/src/vi/sangtacviet/icon.png"
   },
@@ -65,9 +65,9 @@
   {
     "id": "nettruyen-manga",
     "name": "NetTruyen",
-    "site": "https://www.nettruyen.com.mx",
+    "site": "https://nettruyenar.com",
     "lang": "Tiếng Việt",
-    "version": "2.3.5",
+    "version": "2.3.6",
     "url": "https://raw.githubusercontent.com/paraphan1992/lnreader-plugins-vn/main/js/plugins/vietnamese/nettruyen.js",
     "iconUrl": "https://raw.githubusercontent.com/lnreader/lnreader-plugins/master/public/static/src/vi/nettruyen/icon.png"
   }

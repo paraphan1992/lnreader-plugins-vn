@@ -46,7 +46,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.1.5';
+        this.version = '2.1.6';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -168,7 +168,8 @@ var SangTacViet = /** @class */ (function () {
                             chapters: [],
                             totalPages: 1,
                         };
-                        cover = $('.bookinfo img, img.cover').attr('src') ||
+                        cover = $('meta[property="og:image"]').attr('content') ||
+                            $('.bookinfo img, img.cover').attr('src') ||
                             $('.bookinfo img, img.cover').attr('data-src') ||
                             $('img[src*="bookcover"], img[src*="qdbimg"]').attr('src');
                         novel.cover = cover
