@@ -77,7 +77,7 @@ var TruyenFull = /** @class */ (function () {
         this.id = 'truyenfull';
         this.name = 'Truyện Full';
         this.icon = 'src/vi/truyenfull/icon.png';
-        this.version = '2.2.0';
+        this.version = '2.2.1';
         this.pluginSettings = {
             site: {
                 value: 'https://truyenfull.live',
@@ -195,7 +195,7 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, loadedCheerio, _a, lastPage, novel, genres;
+            var url, loadedCheerio, _a, lastPage, novel, summary, genres;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -223,7 +223,15 @@ var TruyenFull = /** @class */ (function () {
                         novel.cover =
                             loadedCheerio('div.book > img').attr('src') ||
                                 loadedCheerio('div.book > img').attr('data-src');
-                        novel.summary = loadedCheerio('div.desc-text').text().trim();
+                        summary = loadedCheerio('div.desc-text').first().clone();
+                        summary.find('br').replaceWith('\n');
+                        summary.find('p').after('\n');
+                        novel.summary = summary
+                            .text()
+                            .split('\n')
+                            .map(function (line) { return line.trim(); })
+                            .filter(Boolean)
+                            .join('\n');
                         novel.author =
                             loadedCheerio('a[itemprop="author"]').text().trim() ||
                                 loadedCheerio('h3:contains("Tác giả:")')
@@ -274,7 +282,7 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var loadedCheerio, _a, title, chapterBody, chapterText;
+            var loadedCheerio, _a, titleText, title, chapterBody, chapterText;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -297,7 +305,8 @@ var TruyenFull = /** @class */ (function () {
                             node.removeAttr('width');
                             node.removeAttr('height');
                         });
-                        title = loadedCheerio('.chapter-title').html() || '';
+                        titleText = loadedCheerio('.chapter-title').first().text().trim();
+                        title = titleText ? "<h2>".concat(titleText, "</h2>") : '';
                         chapterBody = loadedCheerio('#chapter-c').html() ||
                             loadedCheerio('.chapter-c').html() ||
                             '';

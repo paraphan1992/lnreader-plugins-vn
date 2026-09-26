@@ -209,7 +209,7 @@ var LightNovelVN = /** @class */ (function () {
     function LightNovelVN() {
         this.id = 'lightnovel.vn';
         this.name = 'Light Novel VN';
-        this.version = '2.2.0';
+        this.version = '2.2.1';
         this.icon = 'src/vi/lightnovelvn/icon.png';
         this.pluginSettings = {
             site: {
@@ -598,8 +598,13 @@ var LightNovelVN = /** @class */ (function () {
                     case 1:
                         book = _d.sent();
                         chapter = book.chapters[index];
-                        if (!chapter)
-                            throw new Error('Không tìm thấy chương trong EPUB');
+                        if (!chapter) {
+                            // The app keeps chapter rows from older plugin versions (one row per
+                            // EPUB file) after a refresh; those indexes no longer exist.
+                            return [2 /*return*/, ('<p>Chương này thuộc mục lục cũ của plugin, nội dung đã được gộp vào ' +
+                                    'các chương phía trên.</p>' +
+                                    '<p>Muốn mục lục gọn: xóa truyện khỏi thư viện rồi mở lại.</p>')];
+                        }
                         htmlParts = [];
                         budget = { bytes: 12000000 };
                         _i = 0, _a = chapter.filePaths;

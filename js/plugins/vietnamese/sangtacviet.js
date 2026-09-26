@@ -89,7 +89,7 @@ var SangTacViet = /** @class */ (function () {
         this.id = 'sangtacviet';
         this.name = 'Sáng Tác Việt';
         this.icon = 'src/vi/sangtacviet/icon.png';
-        this.version = '2.2.0';
+        this.version = '2.2.1';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -518,9 +518,12 @@ var SangTacViet = /** @class */ (function () {
                         }
                         // The chapter API is gated by the site's in-browser anti-bot script; it
                         // only answers once a real WebView session has run it and set cookies.
-                        return [2 /*return*/, ('<p>Sáng Tác Việt chỉ trả nội dung chương cho phiên trình duyệt đã mở trang.</p>' +
-                                '<p>Bấm biểu tượng quả địa cầu (Mở WebView) ở chương này, đợi chữ hiện ra, ' +
-                                'quay lại rồi kéo xuống để tải lại chương.</p>')];
+                        return [2 /*return*/, ('<p>Sáng Tác Việt chỉ trả nội dung chương cho phiên trình duyệt đã mở trang ' +
+                                '(site có thể yêu cầu nhập mã xác thực).</p>' +
+                                '<p>1. Chạm giữa màn hình → nút ⋮ → <b>Open in WebView</b>.</p>' +
+                                '<p>2. Chạm dòng "Nhấp vào để tải chương", nhập mã xác thực nếu site hỏi, ' +
+                                'đợi chữ của chương hiện ra.</p>' +
+                                '<p>3. Quay lại → nút ⋮ → <b>Làm mới</b>.</p>')];
                 }
             });
         });
