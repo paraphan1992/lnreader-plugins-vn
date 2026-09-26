@@ -42,12 +42,51 @@ var filterInputs_1 = require("@libs/filterInputs");
 var novelStatus_1 = require("@libs/novelStatus");
 var storage_1 = require("@libs/storage");
 var CHAPTER_PATH = /^\/truyen\/([^/]+)\/chuong-(\d+)$/;
+var wait = function (ms) { return new Promise(function (resolve) { return setTimeout(resolve, ms); }); };
+function fetchHtml(url, headers) {
+    return __awaiter(this, void 0, void 0, function () {
+        var lastError, attempt, err_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    attempt = 0;
+                    _a.label = 1;
+                case 1:
+                    if (!(attempt < 3)) return [3 /*break*/, 7];
+                    _a.label = 2;
+                case 2:
+                    _a.trys.push([2, 4, , 6]);
+                    return [4 /*yield*/, (0, fetch_1.fetchApi)(url, { headers: headers }).then(function (r) { return r.text(); })];
+                case 3: return [2 /*return*/, _a.sent()];
+                case 4:
+                    err_1 = _a.sent();
+                    lastError = err_1;
+                    return [4 /*yield*/, wait(400 * (attempt + 1))];
+                case 5:
+                    _a.sent();
+                    return [3 /*break*/, 6];
+                case 6:
+                    attempt++;
+                    return [3 /*break*/, 1];
+                case 7: throw lastError;
+            }
+        });
+    });
+}
+// The site's own search/listing JS sends a WHERE fragment; keep user input
+// from breaking out of the quoted LIKE pattern.
+var sanitizeKeyword = function (value) {
+    return value
+        .replace(/["'`%_\\;()=<>]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
 var TruyenSS = /** @class */ (function () {
     function TruyenSS() {
         this.id = 'truyenss.com';
         this.name = 'TruyenSS';
         this.icon = 'src/vi/truyenss/icon.png';
-        this.version = '1.1.2';
+        this.version = '1.2.0';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -100,7 +139,8 @@ var TruyenSS = /** @class */ (function () {
     }
     Object.defineProperty(TruyenSS.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://truyenss.com';
+            var site = (storage_1.storage.get('site') || '').trim();
+            return site.replace(/\/+$/, '') || 'https://truyenss.com';
         },
         enumerable: false,
         configurable: true
@@ -173,17 +213,20 @@ var TruyenSS = /** @class */ (function () {
         });
         return novels;
     };
-    TruyenSS.prototype.listFromLayout = function (query) {
-        return __awaiter(this, void 0, void 0, function () {
+    TruyenSS.prototype.listFromLayout = function (query_1) {
+        return __awaiter(this, arguments, void 0, function (query, pageNo) {
             var url, body;
+            if (pageNo === void 0) { pageNo = 1; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         url = "".concat(this.site, "/layout/list-danh-muc-truyen.php?query=") +
-                            encodeURIComponent(query);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url, {
-                                headers: { Referer: this.site + '/' },
-                            }).then(function (r) { return r.text(); })];
+                            encodeURIComponent(query) +
+                            (pageNo > 1 ? "&page=".concat(pageNo) : '');
+                        return [4 /*yield*/, fetchHtml(url, {
+                                Referer: this.site + '/',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            })];
                     case 1:
                         body = _a.sent();
                         return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body), url)];
@@ -193,38 +236,35 @@ var TruyenSS = /** @class */ (function () {
     };
     TruyenSS.prototype.popularNovels = function (pageNo_1, _a) {
         return __awaiter(this, arguments, void 0, function (pageNo, _b) {
-            var fromLayout, body_1, genre, url, body, fromPage;
-            var _c;
+            var fromLayout_1, body, genre, label, fromLayout, url, _c, _d;
+            var _e, _f;
             var showLatestNovels = _b.showLatestNovels, filters = _b.filters;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         if (!showLatestNovels) return [3 /*break*/, 3];
-                        if (pageNo > 1)
-                            return [2 /*return*/, []];
-                        return [4 /*yield*/, this.listFromLayout('1')];
+                        return [4 /*yield*/, this.listFromLayout('1', pageNo)];
                     case 1:
-                        fromLayout = _d.sent();
-                        if (fromLayout.length)
-                            return [2 /*return*/, fromLayout];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + '/').then(function (r) { return r.text(); })];
+                        fromLayout_1 = _g.sent();
+                        if (fromLayout_1.length || pageNo > 1)
+                            return [2 /*return*/, fromLayout_1];
+                        return [4 /*yield*/, fetchHtml(this.site + '/')];
                     case 2:
-                        body_1 = _d.sent();
-                        return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body_1), "".concat(this.site, "/"))];
+                        body = _g.sent();
+                        return [2 /*return*/, this.collectTruyenLinks((0, cheerio_1.load)(body), "".concat(this.site, "/"))];
                     case 3:
-                        genre = (_c = filters === null || filters === void 0 ? void 0 : filters.genre.value) !== null && _c !== void 0 ? _c : 'tien-hiep';
-                        url = pageNo <= 1
-                            ? "".concat(this.site, "/").concat(genre)
-                            : "".concat(this.site, "/").concat(genre, "?page=").concat(pageNo);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
+                        genre = (_e = filters === null || filters === void 0 ? void 0 : filters.genre.value) !== null && _e !== void 0 ? _e : 'tien-hiep';
+                        label = ((_f = this.filters.genre.options.find(function (option) { return option.value === genre; })) === null || _f === void 0 ? void 0 : _f.label) || genre;
+                        return [4 /*yield*/, this.listFromLayout("tags LIKE \"%".concat(sanitizeKeyword(label), "%\""), pageNo)];
                     case 4:
-                        body = _d.sent();
-                        fromPage = this.collectTruyenLinks((0, cheerio_1.load)(body), url);
-                        if (fromPage.length)
-                            return [2 /*return*/, fromPage];
-                        if (pageNo > 1)
-                            return [2 /*return*/, []];
-                        return [2 /*return*/, this.listFromLayout('1')];
+                        fromLayout = _g.sent();
+                        if (fromLayout.length || pageNo > 1)
+                            return [2 /*return*/, fromLayout];
+                        url = "".concat(this.site, "/").concat(genre);
+                        _c = this.collectTruyenLinks;
+                        _d = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(url)];
+                    case 5: return [2 /*return*/, _c.apply(this, [_d.apply(void 0, [_g.sent()]), url])];
                 }
             });
         });
@@ -265,17 +305,17 @@ var TruyenSS = /** @class */ (function () {
     };
     TruyenSS.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var path, url, body, loadedCheerio, novel, coverSrc, infoBlock, infoText, authorMatch, statusMatch, intro, block;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var path, url, loadedCheerio, _a, novel, coverSrc, infoBlock, infoText, authorMatch, statusMatch, intro, block;
+            var _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         path = novelPath;
                         url = this.site + path;
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
+                        _a = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(url)];
                     case 1:
-                        body = _b.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
+                        loadedCheerio = _a.apply(void 0, [_c.sent()]);
                         novel = {
                             path: path,
                             name: loadedCheerio('#inner-page > h1').first().text().trim() ||
@@ -285,7 +325,7 @@ var TruyenSS = /** @class */ (function () {
                         };
                         coverSrc = loadedCheerio('.info_truyen img.avatar').attr('src');
                         novel.cover =
-                            (_a = this.resolveCoverUrl(coverSrc, url)) !== null && _a !== void 0 ? _a : this.sitePlaceholderCover;
+                            (_b = this.resolveCoverUrl(coverSrc, url)) !== null && _b !== void 0 ? _b : this.sitePlaceholderCover;
                         infoBlock = loadedCheerio('.info_truyen').first();
                         infoText = infoBlock.text();
                         authorMatch = infoText.match(/Tác\s*Giả:\s*([^\n\r]+)/i);
@@ -322,7 +362,25 @@ var TruyenSS = /** @class */ (function () {
     };
     TruyenSS.prototype.extractChapterBody = function ($) {
         var _a, _b;
-        $('script, style').remove();
+        $('script, style, h1').remove();
+        // The site repeats the chapter heading as "ChươngSố N: ..." (sometimes
+        // split over two paragraphs) right under the bold title.
+        var title = $('p > b').first().text().replace(/\s+/g, ' ').trim();
+        var titleTail = title.replace(/^Chương\s*\d+\s*:?\s*/i, '');
+        var pending = '';
+        $('p').each(function (_, el) {
+            var node = $(el);
+            var text = node.text().replace(/\s+/g, ' ').trim();
+            if (/^ChươngSố\s*\d+/i.test(text)) {
+                pending = text.replace(/^ChươngSố\s*\d+\s*:?\s*/i, '');
+                node.remove();
+                return;
+            }
+            if (pending && titleTail.startsWith("".concat(pending, " ").concat(text).trim())) {
+                node.remove();
+            }
+            pending = '';
+        });
         $('img').each(function (_, el) {
             var node = $(el);
             var src = node.attr('data-src') ||
@@ -370,12 +428,10 @@ var TruyenSS = /** @class */ (function () {
                         chuong = m[2];
                         referer = "".concat(this.site, "/truyen/").concat(folder);
                         qs = new URLSearchParams({ folder: folder, chuong: chuong }).toString();
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/layout/xem-chuong.php?").concat(qs), {
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                    Referer: referer,
-                                },
-                            }).then(function (r) { return r.text(); })];
+                        return [4 /*yield*/, fetchHtml("".concat(this.site, "/layout/xem-chuong.php?").concat(qs), {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                Referer: referer,
+                            })];
                     case 1:
                         body = _a.sent();
                         if (!body.trim()) {
@@ -388,40 +444,12 @@ var TruyenSS = /** @class */ (function () {
     };
     TruyenSS.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var raw, q, tryUrls, _i, tryUrls_1, tryUrl, body, novels, safe;
+            var keyword;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        raw = searchTerm.trim();
-                        if (!raw)
-                            return [2 /*return*/, []];
-                        q = encodeURIComponent(raw);
-                        tryUrls = [
-                            "".concat(this.site, "/tim-kiem?q=").concat(q, "&page=").concat(pageNo),
-                            "".concat(this.site, "/tim-kiem/").concat(q, "?page=").concat(pageNo),
-                            "".concat(this.site, "/tim-truyen?tu-khoa=").concat(q, "&page=").concat(pageNo),
-                        ];
-                        _i = 0, tryUrls_1 = tryUrls;
-                        _a.label = 1;
-                    case 1:
-                        if (!(_i < tryUrls_1.length)) return [3 /*break*/, 4];
-                        tryUrl = tryUrls_1[_i];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(tryUrl).then(function (r) { return r.text(); })];
-                    case 2:
-                        body = _a.sent();
-                        novels = this.collectTruyenLinks((0, cheerio_1.load)(body), tryUrl);
-                        if (novels.length)
-                            return [2 /*return*/, novels];
-                        _a.label = 3;
-                    case 3:
-                        _i++;
-                        return [3 /*break*/, 1];
-                    case 4:
-                        if (pageNo > 1)
-                            return [2 /*return*/, []];
-                        safe = raw.replace(/["'%\\]/g, '');
-                        return [2 /*return*/, this.listFromLayout(" ( ten LIKE \"%".concat(safe, "%\" OR tac_gia LIKE \"%").concat(safe, "%\" ) "))];
-                }
+                keyword = sanitizeKeyword(searchTerm);
+                if (!keyword)
+                    return [2 /*return*/, []];
+                return [2 /*return*/, this.listFromLayout(" ( ten LIKE \"%".concat(keyword, "%\" OR tac_gia LIKE \"%").concat(keyword, "%\" ) "), pageNo)];
             });
         });
     };

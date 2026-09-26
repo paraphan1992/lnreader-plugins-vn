@@ -59,13 +59,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
+var filterInputs_1 = require("@libs/filterInputs");
 var storage_1 = require("@libs/storage");
 var NetTruyenManga = /** @class */ (function () {
     function NetTruyenManga() {
         this.id = 'nettruyen-manga';
         this.name = 'NetTruyen';
         this.icon = 'src/vi/nettruyen/icon.png';
-        this.version = '2.3.7';
+        this.version = '2.4.0';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -77,11 +78,85 @@ var NetTruyenManga = /** @class */ (function () {
             headers: { Referer: 'https://nettruyenar.com/' },
         };
         this.liveKey = 'liveSite';
-        this.hosts = [
-            'https://nettruyenar.com',
-            'https://www.nettruyen.com.mx',
-        ];
-        this.filters = {};
+        this.hosts = ['https://nettruyenar.com', 'https://www.nettruyen.com.mx'];
+        this.filters = {
+            sort: {
+                type: filterInputs_1.FilterTypes.Picker,
+                label: 'Sắp xếp',
+                value: '10',
+                options: [
+                    { label: 'Top all', value: '10' },
+                    { label: 'Top tháng', value: '11' },
+                    { label: 'Top tuần', value: '12' },
+                    { label: 'Top ngày', value: '13' },
+                    { label: 'Ngày cập nhật', value: '0' },
+                    { label: 'Truyện mới', value: '15' },
+                    { label: 'Theo dõi', value: '20' },
+                    { label: 'Bình luận', value: '25' },
+                    { label: 'Số chapter', value: '30' },
+                ],
+            },
+            status: {
+                type: filterInputs_1.FilterTypes.Picker,
+                label: 'Tình trạng',
+                value: '-1',
+                options: [
+                    { label: 'Tất cả', value: '-1' },
+                    { label: 'Đang tiến hành', value: '1' },
+                    { label: 'Hoàn thành', value: '2' },
+                ],
+            },
+            genre: {
+                type: filterInputs_1.FilterTypes.Picker,
+                label: 'Thể loại',
+                value: '',
+                options: [
+                    { label: 'Tất cả', value: '' },
+                    { label: 'Action', value: 'action-95' },
+                    { label: 'Adventure', value: 'adventure' },
+                    { label: 'Anime', value: 'anime' },
+                    { label: 'Chuyển Sinh', value: 'chuyen-sinh-2130' },
+                    { label: 'Comedy', value: 'comedy-99' },
+                    { label: 'Comic', value: 'comic' },
+                    { label: 'Cooking', value: 'cooking' },
+                    { label: 'Cổ Đại', value: 'co-dai-207' },
+                    { label: 'Doujinshi', value: 'doujinshi' },
+                    { label: 'Drama', value: 'drama-103' },
+                    { label: 'Đam Mỹ', value: 'dam-my' },
+                    { label: 'Fantasy', value: 'fantasy-105' },
+                    { label: 'Gender Bender', value: 'gender-bender' },
+                    { label: 'Historical', value: 'historical' },
+                    { label: 'Horror', value: 'horror' },
+                    { label: 'Live action', value: 'live-action' },
+                    { label: 'Manga', value: 'manga-112' },
+                    { label: 'Manhua', value: 'manhua' },
+                    { label: 'Manhwa', value: 'manhwa-11400' },
+                    { label: 'Martial Arts', value: 'martial-arts' },
+                    { label: 'Mecha', value: 'mecha-117' },
+                    { label: 'Mystery', value: 'mystery' },
+                    { label: 'Ngôn Tình', value: 'ngon-tinh' },
+                    { label: 'Psychological', value: 'psychological' },
+                    { label: 'Romance', value: 'romance-121' },
+                    { label: 'School Life', value: 'school-life' },
+                    { label: 'Sci-fi', value: 'sci-fi' },
+                    { label: 'Shoujo', value: 'shoujo' },
+                    { label: 'Shoujo Ai', value: 'shoujo-ai-126' },
+                    { label: 'Shounen', value: 'shounen-127' },
+                    { label: 'Shounen Ai', value: 'shounen-ai' },
+                    { label: 'Slice of Life', value: 'slice-of-life' },
+                    { label: 'Sports', value: 'sports' },
+                    { label: 'Supernatural', value: 'supernatural' },
+                    { label: 'Thiếu Nhi', value: 'thieu-nhi' },
+                    { label: 'Tragedy', value: 'tragedy-136' },
+                    { label: 'Trinh Thám', value: 'trinh-tham' },
+                    { label: 'Truyện scan', value: 'truyen-scan' },
+                    { label: 'Truyện Màu', value: 'truyen-mau' },
+                    { label: 'Webtoon', value: 'webtoon' },
+                    { label: 'Xuyên Không', value: 'xuyen-khong-205' },
+                    { label: 'Tu Tiên', value: 'tu-tien' },
+                ],
+            },
+        };
     }
     Object.defineProperty(NetTruyenManga.prototype, "site", {
         get: function () {
@@ -113,38 +188,48 @@ var NetTruyenManga = /** @class */ (function () {
     };
     NetTruyenManga.prototype.fetchText = function (pathAndQuery, extraHeaders) {
         return __awaiter(this, void 0, void 0, function () {
-            var lastError, _i, _a, host, res, html, err_1;
+            var lastError, _i, _a, host, attempt, res, html, err_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _i = 0, _a = this.candidateHosts();
                         _b.label = 1;
                     case 1:
-                        if (!(_i < _a.length)) return [3 /*break*/, 7];
+                        if (!(_i < _a.length)) return [3 /*break*/, 10];
                         host = _a[_i];
+                        attempt = 0;
                         _b.label = 2;
                     case 2:
-                        _b.trys.push([2, 5, , 6]);
+                        if (!(attempt < 2)) return [3 /*break*/, 9];
+                        _b.label = 3;
+                    case 3:
+                        _b.trys.push([3, 6, , 8]);
                         return [4 /*yield*/, (0, fetch_1.fetchApi)(host + pathAndQuery, {
                                 headers: __assign({ Referer: "".concat(host, "/") }, extraHeaders),
                             })];
-                    case 3:
+                    case 4:
                         res = _b.sent();
                         return [4 /*yield*/, res.text()];
-                    case 4:
+                    case 5:
                         html = _b.sent();
                         if (this.isChallenge(html) || html.length < 800)
-                            return [3 /*break*/, 6];
+                            return [3 /*break*/, 9];
                         this.rememberHost(host);
                         return [2 /*return*/, html];
-                    case 5:
+                    case 6:
                         err_1 = _b.sent();
                         lastError = err_1 instanceof Error ? err_1 : new Error(String(err_1));
-                        return [3 /*break*/, 6];
-                    case 6:
+                        return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 300); })];
+                    case 7:
+                        _b.sent();
+                        return [3 /*break*/, 8];
+                    case 8:
+                        attempt++;
+                        return [3 /*break*/, 2];
+                    case 9:
                         _i++;
                         return [3 /*break*/, 1];
-                    case 7: throw (lastError ||
+                    case 10: throw (lastError ||
                         new Error('NetTruyen bị Cloudflare chặn. Tắt VPN rồi bấm Thử lại.'));
                 }
             });
@@ -173,7 +258,13 @@ var NetTruyenManga = /** @class */ (function () {
     NetTruyenManga.prototype.parseNovels = function (loadedCheerio) {
         var _this = this;
         var novels = [];
-        loadedCheerio('.comic-item, .item, .row .item').each(function (_, ele) {
+        // The main grid sits in `.items`; sliders and sidebars repeat the same
+        // top comics on every page, so only fall back to them when it is missing.
+        var main = loadedCheerio('.items .row .item');
+        var cards = main.length
+            ? main
+            : loadedCheerio('.comic-item, .item, .row .item');
+        cards.each(function (_, ele) {
             var a = loadedCheerio(ele).find('h3 a, .title a, a.jtip').first();
             var href = a.attr('href');
             var name = a.text().trim();
@@ -257,7 +348,9 @@ var NetTruyenManga = /** @class */ (function () {
                             row = rows_1[_i];
                             chapterSlug = String(row.chapter_slug || '').trim();
                             chapterId = String(row.chapter_id || '').trim();
-                            name_1 = String(row.chapter_name || '').replace(/\s+/g, ' ').trim();
+                            name_1 = String(row.chapter_name || '')
+                                .replace(/\s+/g, ' ')
+                                .trim();
                             if (!chapterSlug || !chapterId || !name_1)
                                 continue;
                             path = "/truyen-tranh/".concat(slug, "/").concat(chapterSlug, "/").concat(chapterId);
@@ -284,14 +377,21 @@ var NetTruyenManga = /** @class */ (function () {
             });
         });
     };
-    NetTruyenManga.prototype.popularNovels = function (pageNo) {
+    NetTruyenManga.prototype.popularNovels = function (pageNo, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var body;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.fetchText("/?page=".concat(pageNo))];
+            var showLatestNovels, filters, sort, status, genre, body;
+            var _a, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        showLatestNovels = options === null || options === void 0 ? void 0 : options.showLatestNovels;
+                        filters = options === null || options === void 0 ? void 0 : options.filters;
+                        sort = showLatestNovels ? '0' : ((_a = filters === null || filters === void 0 ? void 0 : filters.sort) === null || _a === void 0 ? void 0 : _a.value) || '10';
+                        status = ((_b = filters === null || filters === void 0 ? void 0 : filters.status) === null || _b === void 0 ? void 0 : _b.value) || '-1';
+                        genre = ((_c = filters === null || filters === void 0 ? void 0 : filters.genre) === null || _c === void 0 ? void 0 : _c.value) ? "/".concat(filters.genre.value) : '';
+                        return [4 /*yield*/, this.fetchText("/tim-truyen".concat(genre, "?status=").concat(status, "&sort=").concat(sort, "&page=").concat(pageNo))];
                     case 1:
-                        body = _a.sent();
+                        body = _d.sent();
                         return [2 /*return*/, this.parseNovels((0, cheerio_1.load)(body))];
                 }
             });
@@ -299,7 +399,7 @@ var NetTruyenManga = /** @class */ (function () {
     };
     NetTruyenManga.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var body, loadedCheerio, novel, cover, meta, _a;
+            var body, loadedCheerio, novel, cover, summary, author, status, meta, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, this.fetchText(novelPath)];
@@ -323,11 +423,34 @@ var NetTruyenManga = /** @class */ (function () {
                                     ? "https:".concat(cover)
                                     : this.site + cover
                             : undefined;
-                        novel.summary = loadedCheerio('.detail-content p, .shortened')
-                            .text()
+                        summary = loadedCheerio('.detail-content .shortened').first().clone();
+                        summary.find('h1, h2, h3, script, style').remove();
+                        // NetTruyen prepends a generated SEO paragraph (views, stars, followers).
+                        summary
+                            .find('p')
+                            .filter(function (_, el) {
+                            return /nổi bật trên|lượt đọc|người theo dõi/i.test(loadedCheerio(el).text());
+                        })
+                            .remove();
+                        novel.summary = (summary.text() || loadedCheerio('.detail-content p').text())
+                            .replace(/\s+/g, ' ')
                             .trim();
-                        novel.author = loadedCheerio('.author .col-xs-8').text().trim();
-                        novel.status = novelStatus_1.NovelStatus.Ongoing;
+                        author = loadedCheerio('.list-info .author .col-xs-8').text().trim();
+                        if (author && !/đang cập nhật/i.test(author))
+                            novel.author = author;
+                        novel.genres = loadedCheerio('.list-info .kind .col-xs-8 a')
+                            .map(function (_, el) { return loadedCheerio(el).text().trim(); })
+                            .get()
+                            .filter(Boolean)
+                            .join(',');
+                        status = loadedCheerio('.list-info .status .col-xs-8')
+                            .text()
+                            .toLowerCase();
+                        novel.status = status.includes('hoàn thành')
+                            ? novelStatus_1.NovelStatus.Completed
+                            : status.includes('đang')
+                                ? novelStatus_1.NovelStatus.Ongoing
+                                : novelStatus_1.NovelStatus.Unknown;
                         meta = this.comicMeta(body, novelPath);
                         if (!(meta.slug && meta.comicId)) return [3 /*break*/, 3];
                         _a = novel;

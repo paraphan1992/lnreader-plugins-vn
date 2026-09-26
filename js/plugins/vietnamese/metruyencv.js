@@ -40,12 +40,44 @@ var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
 var storage_1 = require("@libs/storage");
+var wait = function (ms) { return new Promise(function (resolve) { return setTimeout(resolve, ms); }); };
+// Some ISPs reset connections mid-response, so the body read is retried too.
+function fetchText(url, init) {
+    return __awaiter(this, void 0, void 0, function () {
+        var lastError, attempt, err_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    attempt = 0;
+                    _a.label = 1;
+                case 1:
+                    if (!(attempt < 3)) return [3 /*break*/, 7];
+                    _a.label = 2;
+                case 2:
+                    _a.trys.push([2, 4, , 6]);
+                    return [4 /*yield*/, (0, fetch_1.fetchApi)(url, init).then(function (r) { return r.text(); })];
+                case 3: return [2 /*return*/, _a.sent()];
+                case 4:
+                    err_1 = _a.sent();
+                    lastError = err_1;
+                    return [4 /*yield*/, wait(400 * (attempt + 1))];
+                case 5:
+                    _a.sent();
+                    return [3 /*break*/, 6];
+                case 6:
+                    attempt++;
+                    return [3 /*break*/, 1];
+                case 7: throw lastError;
+            }
+        });
+    });
+}
 var MeTruyenCv = /** @class */ (function () {
     function MeTruyenCv() {
         this.id = 'metruyencv';
         this.name = 'Mê Truyện Chữ (Metruyencv)';
         this.icon = 'src/vi/metruyencv/icon.png';
-        this.version = '2.1.5';
+        this.version = '2.2.0';
         this.pluginSettings = {
             site: {
                 value: 'https://www.metruyencv.org',
@@ -56,14 +88,17 @@ var MeTruyenCv = /** @class */ (function () {
     }
     Object.defineProperty(MeTruyenCv.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://www.metruyencv.org';
+            var site = (storage_1.storage.get('site') || '').trim();
+            return site.replace(/\/+$/, '') || 'https://www.metruyencv.org';
         },
         enumerable: false,
         configurable: true
     });
     MeTruyenCv.prototype.toPath = function (href) {
         try {
-            var url = href.startsWith('http') ? new URL(href) : new URL(href, this.site);
+            var url = href.startsWith('http')
+                ? new URL(href)
+                : new URL(href, this.site);
             return url.pathname.endsWith('/') ? url.pathname : "".concat(url.pathname, "/");
         }
         catch (_a) {
@@ -109,16 +144,24 @@ var MeTruyenCv = /** @class */ (function () {
         var _this = this;
         var chapters = [];
         var seen = new Set();
-        var nodes = loadedCheerio('#chapter-list a[href*="/chuong-"], .chapter-item a[href*="/chuong-"]');
-        var links = nodes.length
-            ? nodes
-            : loadedCheerio('a[href*="/chuong-"]');
+        // `#chapter-list` also holds the "Đọc" / "Từ đầu" buttons.
+        var nodes = loadedCheerio('.chapter-item a[href*="/chuong-"]');
+        var links = nodes.length ? nodes : loadedCheerio('a[href*="/chuong-"]');
         links.each(function (_, ele) {
             var _a;
-            var href = loadedCheerio(ele).attr('href') || '';
-            var name = loadedCheerio(ele).text().replace(/\s+/g, ' ').trim();
+            var node = loadedCheerio(ele);
+            var href = node.attr('href') || '';
+            var heading = node.find('h3').first();
+            var name = (heading.length ? heading.text() : node.text())
+                .replace(/\s+/g, ' ')
+                .trim()
+                // Titles are "<truncated novel name> – Chương N: ..."
+                .replace(/^.*?[–-]\s*(?=Chương\s*\d)/i, '');
             var path = _this.toPath(href);
-            if (!path.includes('/chuong-') || !name || name === 'Đọc' || seen.has(path)) {
+            if (!path.includes('/chuong-') ||
+                !name ||
+                /^(Đọc|Từ đầu|Đọc tiếp|Mới nhất)$/i.test(name) ||
+                seen.has(path)) {
                 return;
             }
             seen.add(path);
@@ -157,15 +200,13 @@ var MeTruyenCv = /** @class */ (function () {
     };
     MeTruyenCv.prototype.fetchAllChapters = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var firstUrl, firstHtml, first$, chapters, lastPage, concurrency, page, chunk, next, pages, added, _i, pages_1, html;
+            var firstUrl, firstHtml, first$, chapters, lastPage, concurrency, page, chunk, next, pages, added, failed, _i, pages_1, html;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         firstUrl = "".concat(this.site).concat(novelPath, "chuong/page/1/");
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(firstUrl)
-                                .then(function (r) { return r.text(); })
-                                .catch(function () { return ''; })];
+                        return [4 /*yield*/, fetchText(firstUrl).catch(function () { return ''; })];
                     case 1:
                         firstHtml = _a.sent();
                         first$ = firstHtml ? (0, cheerio_1.load)(firstHtml) : (0, cheerio_1.load)('');
@@ -183,20 +224,22 @@ var MeTruyenCv = /** @class */ (function () {
                             chunk.push(next);
                         }
                         return [4 /*yield*/, Promise.all(chunk.map(function (pageNo) {
-                                return (0, fetch_1.fetchApi)("".concat(_this.site).concat(novelPath, "chuong/page/").concat(pageNo, "/"))
-                                    .then(function (r) { return r.text(); })
-                                    .catch(function () { return ''; });
+                                return fetchText("".concat(_this.site).concat(novelPath, "chuong/page/").concat(pageNo, "/")).catch(function () { return ''; });
                             }))];
                     case 3:
                         pages = _a.sent();
                         added = 0;
+                        failed = 0;
                         for (_i = 0, pages_1 = pages; _i < pages_1.length; _i++) {
                             html = pages_1[_i];
-                            if (!html)
+                            if (!html) {
+                                failed += 1;
                                 continue;
+                            }
                             added += this.mergeChapters(chapters, this.parseChapters((0, cheerio_1.load)(html)));
                         }
-                        if (!added)
+                        // Only stop early when pages loaded fine but repeat known chapters.
+                        if (!added && !failed)
                             return [3 /*break*/, 5];
                         _a.label = 4;
                     case 4:
@@ -209,46 +252,43 @@ var MeTruyenCv = /** @class */ (function () {
             });
         });
     };
-    MeTruyenCv.prototype.popularNovels = function (pageNo) {
+    MeTruyenCv.prototype.popularNovels = function (pageNo, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var api, result, items, novels, html_1, _a, html;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var order, api, items, _a, _b, novels, html_1, _c, html;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
-                        api = "".concat(this.site, "/wp-json/wp/v2/manga?per_page=20&page=").concat(pageNo, "&_embed=1");
-                        _b.label = 1;
+                        order = (options === null || options === void 0 ? void 0 : options.showLatestNovels) ? '&orderby=modified' : '';
+                        api = "".concat(this.site, "/wp-json/wp/v2/manga?per_page=20&page=").concat(pageNo, "&_embed=1").concat(order);
+                        _d.label = 1;
                     case 1:
-                        _b.trys.push([1, 7, , 8]);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(api)];
+                        _d.trys.push([1, 6, , 7]);
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, fetchText(api)];
                     case 2:
-                        result = _b.sent();
-                        return [4 /*yield*/, result.json()];
-                    case 3:
-                        items = _b.sent();
-                        if (!Array.isArray(items)) return [3 /*break*/, 6];
+                        items = _b.apply(_a, [_d.sent()]);
+                        if (!Array.isArray(items)) return [3 /*break*/, 5];
                         novels = this.novelsFromJson(items);
-                        if (!(pageNo === 1 && novels.some(function (n) { return !n.cover; }))) return [3 /*break*/, 5];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/truyen/"))
-                                .then(function (r) { return r.text(); })
-                                .catch(function () { return ''; })];
-                    case 4:
-                        html_1 = _b.sent();
+                        if (!(pageNo === 1 && novels.some(function (n) { return !n.cover; }))) return [3 /*break*/, 4];
+                        return [4 /*yield*/, fetchText("".concat(this.site, "/truyen/")).catch(function () { return ''; })];
+                    case 3:
+                        html_1 = _d.sent();
                         if (html_1)
                             this.mergeCovers(novels, this.parseListing((0, cheerio_1.load)(html_1)));
-                        _b.label = 5;
-                    case 5: return [2 /*return*/, novels];
-                    case 6: return [3 /*break*/, 8];
+                        _d.label = 4;
+                    case 4: return [2 /*return*/, novels];
+                    case 5: return [3 /*break*/, 7];
+                    case 6:
+                        _c = _d.sent();
+                        if (pageNo > 1)
+                            return [2 /*return*/, []];
+                        return [3 /*break*/, 7];
                     case 7:
-                        _a = _b.sent();
                         if (pageNo > 1)
                             return [2 /*return*/, []];
-                        return [3 /*break*/, 8];
+                        return [4 /*yield*/, fetchText("".concat(this.site, "/truyen/"))];
                     case 8:
-                        if (pageNo > 1)
-                            return [2 /*return*/, []];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/truyen/")).then(function (r) { return r.text(); })];
-                    case 9:
-                        html = _b.sent();
+                        html = _d.sent();
                         return [2 /*return*/, this.parseListing((0, cheerio_1.load)(html))];
                 }
             });
@@ -285,12 +325,12 @@ var MeTruyenCv = /** @class */ (function () {
     };
     MeTruyenCv.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, body, $, novel, chapters, ajax;
+            var url, body, $, novel, info, genres, infoText, chapters, ajax;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         url = this.site + novelPath;
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
+                        return [4 /*yield*/, fetchText(url)];
                     case 1:
                         body = _a.sent();
                         $ = (0, cheerio_1.load)(body);
@@ -314,7 +354,19 @@ var MeTruyenCv = /** @class */ (function () {
                             .first()
                             .text()
                             .trim();
-                        novel.status = novelStatus_1.NovelStatus.Ongoing;
+                        info = $('.manga-info-details').first();
+                        novel.author =
+                            info.find('a[href*="/tac-gia/"]').first().text().trim() || undefined;
+                        genres = info
+                            .find('a[href*="/the-loai/"]')
+                            .map(function (_, el) { return $(el).text().trim(); })
+                            .get()
+                            .filter(Boolean);
+                        novel.genres = genres.filter(function (g, i) { return genres.indexOf(g) === i; }).join(',');
+                        infoText = info.text().toLowerCase();
+                        novel.status = /hoàn thành|full|completed/.test(infoText)
+                            ? novelStatus_1.NovelStatus.Completed
+                            : novelStatus_1.NovelStatus.Ongoing;
                         return [4 /*yield*/, this.fetchAllChapters(novelPath)];
                     case 2:
                         chapters = _a.sent();
@@ -322,12 +374,10 @@ var MeTruyenCv = /** @class */ (function () {
                             chapters = this.parseChapters($);
                         }
                         if (!(chapters.length < 2)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(url, "ajax/chapters/"), {
+                        return [4 /*yield*/, fetchText("".concat(url, "ajax/chapters/"), {
                                 method: 'POST',
                                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                            })
-                                .then(function (r) { return r.text(); })
-                                .catch(function () { return ''; })];
+                            }).catch(function () { return ''; })];
                     case 3:
                         ajax = _a.sent();
                         if (ajax) {
@@ -359,7 +409,7 @@ var MeTruyenCv = /** @class */ (function () {
             var body, $;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath).then(function (r) { return r.text(); })];
+                    case 0: return [4 /*yield*/, fetchText(this.site + chapterPath)];
                     case 1:
                         body = _a.sent();
                         $ = (0, cheerio_1.load)(body);
@@ -391,35 +441,33 @@ var MeTruyenCv = /** @class */ (function () {
     };
     MeTruyenCv.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var api, result, items, _a, html;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var api, items, _a, _b, _c, html;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         api = "".concat(this.site, "/wp-json/wp/v2/manga?search=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo, "&per_page=20&_embed=1");
-                        _b.label = 1;
+                        _d.label = 1;
                     case 1:
-                        _b.trys.push([1, 4, , 5]);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(api)];
+                        _d.trys.push([1, 3, , 4]);
+                        _b = (_a = JSON).parse;
+                        return [4 /*yield*/, fetchText(api)];
                     case 2:
-                        result = _b.sent();
-                        return [4 /*yield*/, result.json()];
-                    case 3:
-                        items = _b.sent();
+                        items = _b.apply(_a, [_d.sent()]);
                         if (Array.isArray(items)) {
                             return [2 /*return*/, this.novelsFromJson(items)];
                         }
-                        return [3 /*break*/, 5];
+                        return [3 /*break*/, 4];
+                    case 3:
+                        _c = _d.sent();
+                        if (pageNo > 1)
+                            return [2 /*return*/, []];
+                        return [3 /*break*/, 4];
                     case 4:
-                        _a = _b.sent();
                         if (pageNo > 1)
                             return [2 /*return*/, []];
-                        return [3 /*break*/, 5];
+                        return [4 /*yield*/, fetchText("".concat(this.site, "/?s=").concat(encodeURIComponent(searchTerm)))];
                     case 5:
-                        if (pageNo > 1)
-                            return [2 /*return*/, []];
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)("".concat(this.site, "/?s=").concat(encodeURIComponent(searchTerm))).then(function (r) { return r.text(); })];
-                    case 6:
-                        html = _b.sent();
+                        html = _d.sent();
                         return [2 /*return*/, this.parseListing((0, cheerio_1.load)(html))];
                 }
             });

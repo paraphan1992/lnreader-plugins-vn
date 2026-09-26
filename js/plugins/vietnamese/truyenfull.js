@@ -41,12 +41,43 @@ var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
 var filterInputs_1 = require("@libs/filterInputs");
 var storage_1 = require("@libs/storage");
+var wait = function (ms) { return new Promise(function (resolve) { return setTimeout(resolve, ms); }); };
+function fetchHtml(url) {
+    return __awaiter(this, void 0, void 0, function () {
+        var lastError, attempt, err_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    attempt = 0;
+                    _a.label = 1;
+                case 1:
+                    if (!(attempt < 3)) return [3 /*break*/, 7];
+                    _a.label = 2;
+                case 2:
+                    _a.trys.push([2, 4, , 6]);
+                    return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
+                case 3: return [2 /*return*/, _a.sent()];
+                case 4:
+                    err_1 = _a.sent();
+                    lastError = err_1;
+                    return [4 /*yield*/, wait(400 * (attempt + 1))];
+                case 5:
+                    _a.sent();
+                    return [3 /*break*/, 6];
+                case 6:
+                    attempt++;
+                    return [3 /*break*/, 1];
+                case 7: throw lastError;
+            }
+        });
+    });
+}
 var TruyenFull = /** @class */ (function () {
     function TruyenFull() {
         this.id = 'truyenfull';
         this.name = 'Truyện Full';
         this.icon = 'src/vi/truyenfull/icon.png';
-        this.version = '2.1.2';
+        this.version = '2.2.0';
         this.pluginSettings = {
             site: {
                 value: 'https://truyenfull.live',
@@ -78,17 +109,22 @@ var TruyenFull = /** @class */ (function () {
     }
     Object.defineProperty(TruyenFull.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://truyenfull.live';
+            var site = (storage_1.storage.get('site') || '').trim();
+            return site.replace(/\/+$/, '') || 'https://truyenfull.live';
         },
         enumerable: false,
         configurable: true
     });
     TruyenFull.prototype.parseNovels = function (loadedCheerio) {
-        var _this = this;
         var novels = [];
         loadedCheerio('.list-truyen .row').each(function (idx, ele) {
-            var novelName = loadedCheerio(ele).find('h3.truyen-title > a').text().trim();
-            var novelCover = loadedCheerio(ele).find("div[data-classname='cover']").attr('data-image') ||
+            var novelName = loadedCheerio(ele)
+                .find('h3.truyen-title > a')
+                .text()
+                .trim();
+            var novelCover = loadedCheerio(ele)
+                .find("div[data-classname='cover']")
+                .attr('data-image') ||
                 loadedCheerio(ele).find('.lazyimg').attr('data-image') ||
                 loadedCheerio(ele).find('.lazyimg').attr('data-desk-image') ||
                 loadedCheerio(ele).find('img').attr('data-src') ||
@@ -100,20 +136,19 @@ var TruyenFull = /** @class */ (function () {
                 novels.push({
                     name: novelName,
                     cover: novelCover,
-                    path: novelUrl.replace(_this.site, ''),
+                    path: novelUrl.replace(/^https?:\/\/[^/]+/, ''),
                 });
             }
         });
         return novels;
     };
     TruyenFull.prototype.parseChapters = function (loadedCheerio) {
-        var _this = this;
         return loadedCheerio('ul.list-chapter > li > a')
             .toArray()
             .map(function (ele) {
             var _a;
             var href = ele.attribs['href'] || '';
-            var path = href.replace(_this.site, '');
+            var path = href.replace(/^https?:\/\/[^/]+/, '');
             return {
                 name: loadedCheerio(ele).text().trim(),
                 path: path,
@@ -123,13 +158,16 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.popularNovels = function (pageNo_1, _a) {
         return __awaiter(this, arguments, void 0, function (pageNo, _b) {
-            var url, _i, _c, status_1, result, body, loadedCheerio;
-            var filters = _b.filters;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var url, _i, _c, status_1, _d, _e;
+            var showLatestNovels = _b.showLatestNovels, filters = _b.filters;
+            return __generator(this, function (_f) {
+                switch (_f.label) {
                     case 0:
                         url = this.site + '/danh-sach';
-                        if (filters) {
+                        if (showLatestNovels) {
+                            url += '/truyen-moi';
+                        }
+                        else if (filters) {
                             if (filters.sort && filters.sort.value !== '') {
                                 url += "/".concat(filters.sort.value);
                             }
@@ -147,32 +185,25 @@ var TruyenFull = /** @class */ (function () {
                             url += "/truyen-hot";
                         }
                         url += "/trang-".concat(pageNo, "/");
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
-                    case 1:
-                        result = _d.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
-                        body = _d.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                        _d = this.parseNovels;
+                        _e = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(url)];
+                    case 1: return [2 /*return*/, _d.apply(this, [_e.apply(void 0, [_f.sent()])])];
                 }
             });
         });
     };
     TruyenFull.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, result, body, loadedCheerio, lastPage, novel;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var url, loadedCheerio, _a, lastPage, novel, genres;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         url = this.site + novelPath;
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                        _a = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(url)];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
-                        body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
+                        loadedCheerio = _a.apply(void 0, [_b.sent()]);
                         lastPage = 1;
                         loadedCheerio('ul.pagination.pagination-sm > li > a').each(function () {
                             var _a;
@@ -183,20 +214,34 @@ var TruyenFull = /** @class */ (function () {
                         });
                         novel = {
                             path: novelPath,
-                            name: loadedCheerio('div.book > img').attr('alt') || loadedCheerio('h3.title').text().trim() || 'Không có tiêu đề',
+                            name: loadedCheerio('div.book > img').attr('alt') ||
+                                loadedCheerio('h3.title').text().trim() ||
+                                'Không có tiêu đề',
                             chapters: [],
                             totalPages: lastPage,
                         };
-                        novel.cover = loadedCheerio('div.book > img').attr('src') || loadedCheerio('div.book > img').attr('data-src');
+                        novel.cover =
+                            loadedCheerio('div.book > img').attr('src') ||
+                                loadedCheerio('div.book > img').attr('data-src');
                         novel.summary = loadedCheerio('div.desc-text').text().trim();
-                        novel.author = loadedCheerio('a[itemprop="author"]').text().trim() ||
-                            loadedCheerio('h3:contains("Tác giả:")').parent().contents().text().replace('Tác giả:', '').trim();
-                        novel.genres = loadedCheerio('a[itemprop="genre"]')
+                        novel.author =
+                            loadedCheerio('a[itemprop="author"]').text().trim() ||
+                                loadedCheerio('h3:contains("Tác giả:")')
+                                    .parent()
+                                    .contents()
+                                    .text()
+                                    .replace('Tác giả:', '')
+                                    .trim();
+                        genres = loadedCheerio('.info a[itemprop="genre"]')
                             .map(function (i, el) { return loadedCheerio(el).text().trim(); })
                             .toArray()
-                            .join(', ');
-                        novel.status = loadedCheerio('span.text-success, span.text-primary').text().trim();
-                        if (novel.status.toLowerCase().includes('full') || novel.status.toLowerCase().includes('hoàn')) {
+                            .filter(Boolean);
+                        novel.genres = genres.filter(function (g, i) { return genres.indexOf(g) === i; }).join(', ');
+                        novel.status = loadedCheerio('span.text-success, span.text-primary')
+                            .text()
+                            .trim();
+                        if (novel.status.toLowerCase().includes('full') ||
+                            novel.status.toLowerCase().includes('hoàn')) {
                             novel.status = novelStatus_1.NovelStatus.Completed;
                         }
                         else {
@@ -210,18 +255,15 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.parsePage = function (novelPath, page) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, result, body, loadedCheerio, chapters;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var url, loadedCheerio, _a, chapters;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         url = "".concat(this.site).concat(novelPath, "trang-").concat(page, "/#list-chapter");
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url)];
+                        _a = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(url)];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
-                        body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
+                        loadedCheerio = _a.apply(void 0, [_b.sent()]);
                         chapters = this.parseChapters(loadedCheerio);
                         return [2 /*return*/, {
                                 chapters: chapters,
@@ -232,16 +274,14 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, body, loadedCheerio, title, chapterBody, chapterText;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath)];
+            var loadedCheerio, _a, title, chapterBody, chapterText;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(this.site + chapterPath)];
                     case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
-                        body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
+                        loadedCheerio = _a.apply(void 0, [_b.sent()]);
                         loadedCheerio('script, style, iframe, button, .ads, .ad, .adsbygoogle, [class*="ad-"], [id*="ad-"], [class*="colorkey"], [class*="quangcao"]').remove();
                         loadedCheerio('img').each(function (_, el) {
                             var node = loadedCheerio(el);
@@ -269,19 +309,15 @@ var TruyenFull = /** @class */ (function () {
     };
     TruyenFull.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
-            var searchUrl, result, body, loadedCheerio;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var searchUrl, _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         searchUrl = "".concat(this.site, "/tim-kiem/?tukhoa=").concat(encodeURIComponent(searchTerm), "&page=").concat(pageNo);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl)];
-                    case 1:
-                        result = _a.sent();
-                        return [4 /*yield*/, result.text()];
-                    case 2:
-                        body = _a.sent();
-                        loadedCheerio = (0, cheerio_1.load)(body);
-                        return [2 /*return*/, this.parseNovels(loadedCheerio)];
+                        _a = this.parseNovels;
+                        _b = cheerio_1.load;
+                        return [4 /*yield*/, fetchHtml(searchUrl)];
+                    case 1: return [2 /*return*/, _a.apply(this, [_b.apply(void 0, [_c.sent()])])];
                 }
             });
         });

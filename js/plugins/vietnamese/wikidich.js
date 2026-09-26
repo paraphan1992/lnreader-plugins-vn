@@ -59,7 +59,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var cheerio_1 = require("cheerio");
 var fetch_1 = require("@libs/fetch");
 var novelStatus_1 = require("@libs/novelStatus");
+var filterInputs_1 = require("@libs/filterInputs");
 var storage_1 = require("@libs/storage");
+var wait = function (ms) { return new Promise(function (resolve) { return setTimeout(resolve, ms); }); };
+function fetchText(url, init) {
+    return __awaiter(this, void 0, void 0, function () {
+        var lastError, attempt, err_1;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    attempt = 0;
+                    _a.label = 1;
+                case 1:
+                    if (!(attempt < 3)) return [3 /*break*/, 7];
+                    _a.label = 2;
+                case 2:
+                    _a.trys.push([2, 4, , 6]);
+                    return [4 /*yield*/, (0, fetch_1.fetchApi)(url, init).then(function (r) { return r.text(); })];
+                case 3: return [2 /*return*/, _a.sent()];
+                case 4:
+                    err_1 = _a.sent();
+                    lastError = err_1;
+                    return [4 /*yield*/, wait(400 * (attempt + 1))];
+                case 5:
+                    _a.sent();
+                    return [3 /*break*/, 6];
+                case 6:
+                    attempt++;
+                    return [3 /*break*/, 1];
+                case 7: throw lastError;
+            }
+        });
+    });
+}
+var NOVEL_PATH = /^\/truyen\/[^/]+$/;
 /** WikiCV `signFunc`: Latin-1 SHA-256. */
 var sha256Latin1 = function sha256Latin1(W) {
     var self = sha256Latin1;
@@ -119,11 +152,11 @@ var sha256Latin1 = function sha256Latin1(W) {
                             0);
             var A = (V(D, 2) ^ V(D, 13) ^ V(D, 22)) +
                 ((D & hash[1]) ^ (D & hash[2]) ^ (hash[1] & hash[2]));
-            hash = [B + A | 0].concat(hash);
-            hash[4] = hash[4] + B | 0;
+            hash = [(B + A) | 0].concat(hash);
+            hash[4] = (hash[4] + B) | 0;
         }
         for (var U = 0; 8 > U; U++) {
-            hash[U] = hash[U] + G[U] | 0;
+            hash[U] = (hash[U] + G[U]) | 0;
         }
     }
     for (var U = 0; 8 > U; U++) {
@@ -147,12 +180,25 @@ function parseFuzzyOffset(html) {
     var offset = Number(match[1]);
     return Number.isFinite(offset) && offset >= 0 ? offset : null;
 }
+/**
+ * Chapters converted from Chinese sites keep the source's watermark, e.g.
+ * "?? Tám? Một tiếng Trung? Ｗ?Ｗ㈧Ｗ?．?８㈧１㈠Ｚ?..." (八一中文网 www.81zw.com).
+ */
+function cleanWatermarks(html) {
+    return html
+        .replace(/[?\s]*Tám\s*\??\s*một\s*tiếng\s*Trung\s*\??\s*(?:Võng\s*\??)?/gi, ' ')
+        .replace(/[\uFF01-\uFF5E\u3220-\u3243?．。\s]{8,}/g, function (match) {
+        return (match.match(/[\uFF01-\uFF5E\u3220-\u3243]/g) || []).length >= 4
+            ? ' '
+            : match;
+    });
+}
 var WikiDich = /** @class */ (function () {
     function WikiDich() {
         this.id = 'wikidich';
         this.name = 'Wiki Dịch (WikiCV)';
         this.icon = 'src/vi/wikidich/icon.png';
-        this.version = '2.4.5';
+        this.version = '2.5.0';
         this.webStorageUtilized = true;
         this.pluginSettings = {
             site: {
@@ -160,18 +206,34 @@ var WikiDich = /** @class */ (function () {
                 label: 'Site URL',
             },
         };
-        this.filters = {};
+        this.filters = {
+            category: {
+                type: filterInputs_1.FilterTypes.Picker,
+                label: 'Danh mục',
+                value: '',
+                options: [
+                    { label: 'Trang chủ (đề cử)', value: '' },
+                    { label: 'Truyện nam', value: 'truyen-nam' },
+                    { label: 'Nữ tần', value: 'nu-tan' },
+                    { label: 'Đam mỹ', value: 'dam-my' },
+                    { label: 'Chương mới', value: 'chuong-moi' },
+                ],
+            },
+        };
     }
     Object.defineProperty(WikiDich.prototype, "site", {
         get: function () {
-            return storage_1.storage.get('site') || 'https://wikicv.org';
+            var site = (storage_1.storage.get('site') || '').trim();
+            return site.replace(/\/+$/, '') || 'https://wikicv.org';
         },
         enumerable: false,
         configurable: true
     });
     WikiDich.prototype.toPath = function (href) {
         try {
-            var url = href.startsWith('http') ? new URL(href) : new URL(href, this.site);
+            var url = href.startsWith('http')
+                ? new URL(href)
+                : new URL(href, this.site);
             return url.pathname;
         }
         catch (_a) {
@@ -213,7 +275,7 @@ var WikiDich = /** @class */ (function () {
         var _this = this;
         var novels = [];
         var push = function (path, name, cover) {
-            if (!/^\/truyen\/[^/]+$/.test(path))
+            if (!NOVEL_PATH.test(path))
                 return;
             var title = name.replace(/\s+/g, ' ').trim();
             if (!title || title.length < 2 || title.includes('Đăng bài'))
@@ -230,7 +292,12 @@ var WikiDich = /** @class */ (function () {
         };
         loadedCheerio('.book-item').each(function (_, ele) {
             var card = loadedCheerio(ele);
-            var href = card.find('a[href*="/truyen/"]').first().attr('href') || '';
+            // "Chương mới" cards link the latest chapter first, the novel second.
+            var href = card
+                .find('a[href*="/truyen/"]')
+                .toArray()
+                .map(function (a) { return loadedCheerio(a).attr('href') || ''; })
+                .find(function (link) { return NOVEL_PATH.test(_this.toPath(link)); }) || '';
             var name = card.find('.book-title').first().text() ||
                 card.find('a[href*="/truyen/"]').attr('data-tooltip') ||
                 '';
@@ -243,8 +310,7 @@ var WikiDich = /** @class */ (function () {
             var node = loadedCheerio(ele);
             var path = _this.toPath(node.attr('href') || '');
             var name = node.text().trim() || node.attr('title') || '';
-            var cover = _this.absUrl(node.find('img').attr('src') ||
-                node.parent().find('img').attr('src'));
+            var cover = _this.absUrl(node.find('img').attr('src') || node.parent().find('img').attr('src'));
             push(path, name, cover);
         });
         return novels;
@@ -267,19 +333,26 @@ var WikiDich = /** @class */ (function () {
         });
         return chapters;
     };
-    WikiDich.prototype.popularNovels = function (pageNo) {
+    WikiDich.prototype.popularNovels = function (pageNo, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var url, body;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var category, url, _a, _b;
+            var _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0:
-                        url = pageNo > 1
-                            ? "".concat(this.site, "/chuong-moi?page=").concat(pageNo)
-                            : "".concat(this.site, "/");
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(url).then(function (r) { return r.text(); })];
-                    case 1:
-                        body = _a.sent();
-                        return [2 /*return*/, this.parseNovels((0, cheerio_1.load)(body))];
+                        category = (options === null || options === void 0 ? void 0 : options.showLatestNovels)
+                            ? 'chuong-moi'
+                            : ((_d = (_c = options === null || options === void 0 ? void 0 : options.filters) === null || _c === void 0 ? void 0 : _c.category) === null || _d === void 0 ? void 0 : _d.value) || '';
+                        // Only "Chương mới" paginates (?start=); the other lists are fixed tops.
+                        if (category !== 'chuong-moi' && pageNo > 1)
+                            return [2 /*return*/, []];
+                        url = category === 'chuong-moi'
+                            ? "".concat(this.site, "/chuong-moi?start=").concat((pageNo - 1) * 20)
+                            : "".concat(this.site, "/").concat(category);
+                        _a = this.parseNovels;
+                        _b = cheerio_1.load;
+                        return [4 /*yield*/, fetchText(url)];
+                    case 1: return [2 /*return*/, _a.apply(this, [_b.apply(void 0, [_e.sent()])])];
                 }
             });
         });
@@ -313,9 +386,7 @@ var WikiDich = /** @class */ (function () {
                                         sign = sha256Latin1(fuzzySign(signKey + start + pageSize, offset));
                                         tocUrl = "".concat(this.site, "/book/index?bookId=").concat(encodeURIComponent(bookId)) +
                                             "&start=".concat(start, "&size=").concat(pageSize, "&signKey=").concat(encodeURIComponent(signKey), "&sign=").concat(sign);
-                                        return [4 /*yield*/, (0, fetch_1.fetchApi)(tocUrl, { headers: headers })
-                                                .then(function (r) { return r.text(); })
-                                                .catch(function () { return ''; })];
+                                        return [4 /*yield*/, fetchText(tocUrl, { headers: headers }).catch(function () { return ''; })];
                                     case 1:
                                         toc = _a.sent();
                                         return [2 /*return*/, toc ? this.parseChapters((0, cheerio_1.load)(toc)) : []];
@@ -381,30 +452,62 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.parseNovel = function (novelPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var body, $, novel, _a;
+            var body, $, info, novel, summary, field, status, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + novelPath).then(function (r) { return r.text(); })];
+                    case 0: return [4 /*yield*/, fetchText(this.site + novelPath)];
                     case 1:
                         body = _b.sent();
                         $ = (0, cheerio_1.load)(body);
                         this.stripAds($);
+                        info = $('.cover-info').first();
                         novel = {
                             path: novelPath,
-                            name: $('.book-info h1, h2.title, h1.title, h1').first().text().trim() ||
+                            name: info.find('h2').first().text().trim() ||
+                                $('.book-info h1, h1, h2').first().text().trim() ||
+                                $('title').text().trim() ||
                                 'Truyện Wiki',
                             chapters: [],
                             totalPages: 1,
                         };
                         novel.cover = this.absUrl($('img.materialboxed[src*="/photo/"], .book-info img, img[src*="/photo/"]')
                             .first()
-                            .attr('src') ||
-                            $('img[src*="/photo/"]').first().attr('src'));
-                        novel.summary = $('.book-desc-detail, .story-desc, .desc-text')
+                            .attr('src') || $('img[src*="/photo/"]').first().attr('src'));
+                        summary = $('.book-desc-detail, .story-desc, .desc-text')
+                            .first()
+                            .clone();
+                        summary.find('br').replaceWith('\n');
+                        summary.find('p').after('\n');
+                        novel.summary = summary
                             .text()
-                            .trim();
-                        novel.author = $('a[href*="/tac-gia/"]').text().trim();
-                        novel.status = novelStatus_1.NovelStatus.Ongoing;
+                            .split('\n')
+                            .map(function (line) { return line.trim(); })
+                            .filter(Boolean)
+                            .join('\n');
+                        field = function (label) {
+                            return info
+                                .find('p')
+                                .filter(function (_, el) { return $(el).text().trim().startsWith(label); })
+                                .first();
+                        };
+                        novel.author =
+                            field('Tác giả').find('a').first().text().trim() ||
+                                info.find('a[href*="/tac-gia/"]').first().text().trim() ||
+                                undefined;
+                        status = field('Tình trạng').text().toLowerCase();
+                        novel.status = status.includes('hoàn thành')
+                            ? novelStatus_1.NovelStatus.Completed
+                            : status.includes('tạm ngưng')
+                                ? novelStatus_1.NovelStatus.OnHiatus
+                                : novelStatus_1.NovelStatus.Ongoing;
+                        novel.genres = $('.book-desc p')
+                            .filter(function (_, el) { return $(el).text().trim().startsWith('Thể loại'); })
+                            .first()
+                            .find('a')
+                            .map(function (_, el) { return $(el).text().trim(); })
+                            .get()
+                            .filter(Boolean)
+                            .join(',');
                         _a = novel;
                         return [4 /*yield*/, this.fetchToc(body, novelPath)];
                     case 2:
@@ -420,7 +523,7 @@ var WikiDich = /** @class */ (function () {
             var _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + novelPath).then(function (r) { return r.text(); })];
+                    case 0: return [4 /*yield*/, fetchText(this.site + novelPath)];
                     case 1:
                         body = _b.sent();
                         _a = {};
@@ -432,19 +535,20 @@ var WikiDich = /** @class */ (function () {
     };
     WikiDich.prototype.parseChapter = function (chapterPath) {
         return __awaiter(this, void 0, void 0, function () {
-            var body, $;
+            var body, $, html;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, (0, fetch_1.fetchApi)(this.site + chapterPath).then(function (r) { return r.text(); })];
+                    case 0: return [4 /*yield*/, fetchText(this.site + chapterPath)];
                     case 1:
                         body = _a.sent();
                         $ = (0, cheerio_1.load)(body);
                         this.stripAds($);
                         this.unwrapLazyImages($);
-                        return [2 /*return*/, ($('#bookContentBody').html() ||
-                                $('.reading-content').html() ||
-                                $('.chapter-content').html() ||
-                                '')];
+                        html = $('#bookContentBody').html() ||
+                            $('.reading-content').html() ||
+                            $('.chapter-content').html() ||
+                            '';
+                        return [2 /*return*/, cleanWatermarks(html)];
                 }
             });
         });
@@ -452,11 +556,12 @@ var WikiDich = /** @class */ (function () {
     WikiDich.prototype.searchNovels = function (searchTerm, pageNo) {
         return __awaiter(this, void 0, void 0, function () {
             var searchUrl, body, fromSearch, needle, listings, seen, matches, _i, listings_1, html, _a, _b, novel;
+            var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
                         searchUrl = "".concat(this.site, "/tim-kiem?q=").concat(encodeURIComponent(searchTerm), "&qs=1&page=").concat(pageNo);
-                        return [4 /*yield*/, (0, fetch_1.fetchApi)(searchUrl).then(function (r) { return r.text(); })];
+                        return [4 /*yield*/, fetchText(searchUrl)];
                     case 1:
                         body = _c.sent();
                         fromSearch = this.parseNovels((0, cheerio_1.load)(body));
@@ -468,10 +573,9 @@ var WikiDich = /** @class */ (function () {
                         needle = searchTerm.trim().toLowerCase();
                         if (!needle)
                             return [2 /*return*/, []];
-                        return [4 /*yield*/, Promise.all([
-                                (0, fetch_1.fetchApi)("".concat(this.site, "/")).then(function (r) { return r.text(); }),
-                                (0, fetch_1.fetchApi)("".concat(this.site, "/chuong-moi")).then(function (r) { return r.text(); }),
-                            ])];
+                        return [4 /*yield*/, Promise.all(['/', '/truyen-nam', '/nu-tan', '/dam-my', '/chuong-moi'].map(function (path) {
+                                return fetchText(_this.site + path).catch(function () { return ''; });
+                            }))];
                     case 2:
                         listings = _c.sent();
                         seen = new Set();
